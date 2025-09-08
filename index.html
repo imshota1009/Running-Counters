@@ -3,95 +3,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>ランニングトラッカー</title>
+    <title>にゃん歩計</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-
+    
     <style>
         html, body { height: 100%; overflow: hidden; }
-        body { font-family: 'Inter', 'Noto Sans JP', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .bg-dark { background-color: #121212; }
-        .bg-card { background-color: #1e1e1e; }
-        .text-main { color: #e0e0e0; }
-        .text-sub { color: #a0a0a0; }
-        .leaflet-tile { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
+        body { font-family: 'M PLUS Rounded 1c', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .paw-button { transition: transform 0.1s ease-out, box-shadow 0.2s ease; box-shadow: 0 6px 0px 0px #E57E5F; }
+        .paw-button:active { transform: translateY(4px) scale(0.98); box-shadow: 0 2px 0px 0px #E57E5F; }
         .modal.open .modal-content { transform: translateY(0); }
         .modal-content { transition: transform 0.3s ease-out; }
+        .leaflet-container { border-radius: 1.5rem; }
     </style>
 </head>
-<body class="bg-dark text-main antialiased">
+<body class="bg-amber-50 text-orange-900 antialiased">
 
-    <div id="app-container" class="h-full w-full max-w-lg mx-auto bg-dark shadow-2xl flex flex-col">
+    <div id="app-container" class="h-full w-full max-w-lg mx-auto bg-amber-50 flex flex-col">
         
         <!-- Header -->
-        <header class="p-4 flex justify-between items-center flex-shrink-0 z-10">
-            <h1 class="text-xl font-bold flex items-center">
-                <i data-lucide="footprints" class="mr-2 text-cyan-400"></i>Run Tracker
+        <header class="p-4 flex justify-between items-center flex-shrink-0 z-10 relative">
+            <!-- Cat ears decoration -->
+            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-8">
+                <div class="absolute -top-2 left-0 w-8 h-8 bg-amber-50 transform -rotate-45" style="border-top-left-radius: 10px;"></div>
+                <div class="absolute -top-2 right-0 w-8 h-8 bg-amber-50 transform rotate-45" style="border-top-right-radius: 10px;"></div>
+            </div>
+            <h1 class="text-2xl font-extrabold flex items-center text-orange-800">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M17.8 12.5c0-2.3 1.3-4.2 3.2-4.2"/><path d="M2 14.9c0-2.3 1.3-4.2 3.2-4.2"/><path d="M12 20.3c2.8 0 5-2.2 5-5v-3.8c0-1.4-1.3-2.5-2.8-2.5-1.9 0-3.2 1.3-3.2 2.8V5.2c0-1.4-1.3-2.5-2.8-2.5-1.9 0-3.2 1.3-3.2 2.8v1.3c0 2.8 2.2 5 5 5z"/></svg>
+                にゃん歩計
             </h1>
-            <button id="history-btn" class="p-2 rounded-full hover:bg-card transition-colors">
-                <i data-lucide="history" class="w-6 h-6"></i>
+            <button id="history-btn" class="p-2 rounded-full hover:bg-orange-100 transition-colors">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12v-2"/><path d="M14.5 13.12a5 5 0 1 0-5 0"/><path d="m15 14-1 4"/><path d="m9 14 1 4"/><path d="m12 16 2 2.5"/><path d="m12 16-2 2.5"/></svg>
             </button>
         </header>
 
         <!-- Map View -->
-        <div id="map-container" class="flex-grow h-1/2 relative">
-            <div id="map" class="h-full w-full"></div>
-            <div id="permission-overlay" class="absolute inset-0 bg-black/70 flex-col items-center justify-center text-center p-4 hidden">
-                <i data-lucide="map-pin-off" class="w-16 h-16 text-red-500 mb-4"></i>
-                <h2 class="text-xl font-bold mb-2">位置情報が必要です</h2>
-                <p class="text-sub">このアプリを使用するには、位置情報へのアクセスを許可してください。</p>
+        <div id="map-container" class="flex-grow h-1/2 relative p-4">
+            <div id="map" class="h-full w-full shadow-lg"></div>
+            <div id="permission-overlay" class="absolute inset-0 bg-black/70 flex-col items-center justify-center text-center p-4 hidden rounded-3xl">
+                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-4"><path d="M20.25 7.75l-10-5-10 5v10l10 5 10-5v-10z"/><path d="M10.25 2.75L.25 7.75"/><path d="M10.25 12.75v10"/><path d="M3.75 9.25l16.5 8.5"/><path d="M20.25 17.75L10.25 22.75l-10-5"/><path d="M10.25 12.75L.25 7.75l10-5 10 5-10 5z"/><path d="m22.25 6.75-2-1"/><path d="M12.25 1.75l-2-1"/></svg>
+                <h2 class="text-xl font-bold mb-2 text-white">位置情報が必要だにゃ</h2>
+                <p class="text-gray-300">このアプリを使うには、位置情報を許可してほしいにゃ。</p>
             </div>
         </div>
 
         <!-- Stats View -->
         <div id="stats-container" class="p-4 grid grid-cols-2 gap-4 flex-shrink-0">
-            <div class="bg-card p-4 rounded-lg text-center">
-                <p class="text-sm text-sub">距離 (km)</p>
-                <p id="distance" class="text-3xl font-bold">0.00</p>
-            </div>
-            <div class="bg-card p-4 rounded-lg text-center">
-                <p class="text-sm text-sub">ペース (分/km)</p>
-                <p id="pace" class="text-3xl font-bold">--:--</p>
-            </div>
-            <div class="bg-card p-4 rounded-lg text-center">
-                <p class="text-sm text-sub">時間</p>
-                <p id="timer" class="text-3xl font-bold">00:00:00</p>
-            </div>
-            <div class="bg-card p-4 rounded-lg text-center">
-                <p class="text-sm text-sub">推定歩数</p>
-                <p id="steps" class="text-3xl font-bold">0</p>
-            </div>
+            <div class="bg-white p-4 rounded-2xl text-center shadow"><p class="text-sm text-orange-500 font-medium">距離 (km)</p><p id="distance" class="text-3xl font-bold mt-1">0.00</p></div>
+            <div class="bg-white p-4 rounded-2xl text-center shadow"><p class="text-sm text-orange-500 font-medium">ペース (分/km)</p><p id="pace" class="text-3xl font-bold mt-1">--:--</p></div>
+            <div class="bg-white p-4 rounded-2xl text-center shadow"><p class="text-sm text-orange-500 font-medium">時間</p><p id="timer" class="text-3xl font-bold mt-1">00:00:00</p></div>
+            <div class="bg-white p-4 rounded-2xl text-center shadow"><p class="text-sm text-orange-500 font-medium">推定にゃん歩</p><p id="steps" class="text-3xl font-bold mt-1">0</p></div>
         </div>
 
         <!-- Controls -->
         <div class="p-4 flex justify-around items-center flex-shrink-0">
-            <button id="start-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold rounded-full w-28 h-28 flex items-center justify-center text-2xl transition-all shadow-lg">
-                <i data-lucide="play" class="w-10 h-10"></i>
+            <button id="stop-btn" class="bg-rose-400 hover:bg-rose-500 text-white font-bold rounded-full w-20 h-20 items-center justify-center text-xl transition-colors shadow-md hidden">
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
             </button>
-            <button id="pause-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-full w-28 h-28 items-center justify-center text-2xl transition-all shadow-lg hidden">
-                <i data-lucide="pause" class="w-10 h-10"></i>
-            </button>
-            <button id="stop-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold rounded-full w-20 h-20 items-center justify-center text-xl transition-all shadow-md hidden">
-                <i data-lucide="square" class="w-8 h-8"></i>
+            <button id="start-btn" class="paw-button bg-rose-400 text-white font-bold rounded-full w-28 h-28 flex items-center justify-center text-2xl transition-all">
+                 <svg id="start-pause-icon" xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="#ffffff" stroke="#f4a285" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12.9 19.3c1-.8 1.4-2 1-3.3s-1.4-2.2-2.5-2.5c-2.3-.5-4.6-2.9-4.8-5.3-.2-2.8 2.2-5.2 5-5.2 2.1 0 3.9 1.3 4.6 3.2"/><path d="M18 8.8c.3.8.4 1.6.4 2.4 0 2.8-2.2 5-5 5-1.6 0-3-1-3.8-2.2"/><path d="M20.8 13.9c.2-1.6-.3-3.2-1.5-4.4-1.3-1.4-3-2.1-4.8-2.1-3.6 0-6.5 2.9-6.5 6.5 0 2.4 1.3 4.5 3.2 5.6"/><path d="M2.5 17.5c2.4.9 5.2.4 7.2-1.3"/></svg>
             </button>
         </div>
-
     </div>
     
     <!-- History Modal -->
     <div id="history-modal" class="modal fixed inset-0 z-30 flex flex-col justify-end bg-black bg-opacity-70 hidden">
-        <div class="modal-content w-full max-w-lg mx-auto bg-card rounded-t-2xl p-5 transform translate-y-full flex flex-col max-h-[80vh]">
-            <div class="text-center mb-4 flex-shrink-0"><div class="inline-block w-10 h-1.5 bg-gray-600 rounded-full"></div></div>
-            <h3 class="text-xl font-bold text-center mb-5 flex-shrink-0">ランニング履歴</h3>
-            <div id="history-list" class="flex-grow overflow-y-auto space-y-3">
-                <!-- History items will be injected here -->
-            </div>
-            <button id="close-history-btn" class="mt-4 w-full bg-cyan-500 text-white font-bold py-3 rounded-lg">閉じる</button>
+        <div class="modal-content w-full max-w-lg mx-auto bg-orange-100 rounded-t-2xl p-5 transform translate-y-full flex flex-col max-h-[80vh]">
+            <div class="text-center mb-4 flex-shrink-0"><div class="inline-block w-10 h-1.5 bg-orange-200 rounded-full"></div></div>
+            <h3 class="text-2xl font-bold text-center mb-5 flex-shrink-0">おさんぽ履歴</h3>
+            <div id="history-list" class="flex-grow overflow-y-auto space-y-3"></div>
+            <button id="close-history-btn" class="mt-4 w-full bg-rose-400 text-white font-bold py-3 rounded-lg">とじるにゃ</button>
         </div>
     </div>
 
@@ -99,231 +84,175 @@
     document.addEventListener('DOMContentLoaded', () => {
         const getEl = (id) => document.getElementById(id);
 
-        // --- DOM Elements ---
-        const distanceEl = getEl('distance');
-        const paceEl = getEl('pace');
-        const timerEl = getEl('timer');
-        const stepsEl = getEl('steps');
-        const startBtn = getEl('start-btn');
-        const pauseBtn = getEl('pause-btn');
-        const stopBtn = getEl('stop-btn');
-        const historyBtn = getEl('history-btn');
-        const historyModal = getEl('history-modal');
-        const closeHistoryBtn = getEl('close-history-btn');
-        const historyList = getEl('history-list');
+        const distanceEl = getEl('distance'), paceEl = getEl('pace'), timerEl = getEl('timer'), stepsEl = getEl('steps');
+        const startBtn = getEl('start-btn'), stopBtn = getEl('stop-btn'), historyBtn = getEl('history-btn');
+        const historyModal = getEl('history-modal'), closeHistoryBtn = getEl('close-history-btn'), historyList = getEl('history-list');
+        const startPauseIcon = getEl('start-pause-icon');
+        const pawIconSVG = `<svg id="start-pause-icon" xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="#ffffff" stroke="#f4a285" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12.9 19.3c1-.8 1.4-2 1-3.3s-1.4-2.2-2.5-2.5c-2.3-.5-4.6-2.9-4.8-5.3-.2-2.8 2.2-5.2 5-5.2 2.1 0 3.9 1.3 4.6 3.2"/><path d="M18 8.8c.3.8.4 1.6.4 2.4 0 2.8-2.2 5-5 5-1.6 0-3-1-3.8-2.2"/><path d="M20.8 13.9c.2-1.6-.3-3.2-1.5-4.4-1.3-1.4-3-2.1-4.8-2.1-3.6 0-6.5 2.9-6.5 6.5 0 2.4 1.3 4.5 3.2 5.6"/><path d="M2.5 17.5c2.4.9 5.2.4 7.2-1.3"/></svg>`;
+        const pauseIconSVG = `<svg id="start-pause-icon" xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="4" x2="6" y2="20"></line><line x1="18" y1="4" x2="18" y2="20"></line></svg>`;
 
-        // --- State ---
         let map, polyline, userMarker;
-        let isRunning = false;
-        let isPaused = false;
-        let watchId = null;
-        let startTime = 0;
-        let pausedTime = 0;
-        let totalPausedTime = 0;
-        let timerInterval = null;
-        let totalDistance = 0; // in meters
-        let routeCoordinates = [];
-        let runHistory = [];
+        let isRunning = false, isPaused = false;
+        let watchId = null, startTime = 0, pausedTime = 0, totalPausedTime = 0, timerInterval = null;
+        let totalDistance = 0, routeCoordinates = [], runHistory = [];
         const AVERAGE_STRIDE_METERS = 0.762;
+        
+        const catIcon = L.divIcon({
+            html: `<div style="font-size: 32px; transform: translate(-16px, -16px);">🐾</div>`,
+            className: '', iconSize: [32, 32], iconAnchor: [16, 16]
+        });
 
-        // --- Initialization ---
         const init = () => {
-            lucide.createIcons();
-            initMap();
-            loadHistory();
-            attachEventListeners();
+            initMap(); loadHistory(); attachEventListeners();
         };
 
         const initMap = () => {
             map = L.map('map').setView([35.681236, 139.767125], 16);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-            
-            // Try to get current location to center map
             navigator.geolocation.getCurrentPosition(
-                (position) => map.setView([position.coords.latitude, position.coords.longitude], 16),
+                (pos) => map.setView([pos.coords.latitude, pos.coords.longitude], 16),
                 handleLocationError
             );
         };
         
-        const loadHistory = () => {
-            runHistory = JSON.parse(localStorage.getItem('runHistory')) || [];
-        };
-
-        const saveHistory = () => {
-            localStorage.setItem('runHistory', JSON.stringify(runHistory));
-        };
-
-        // --- UI Functions ---
+        const loadHistory = () => runHistory = JSON.parse(localStorage.getItem('nyanpoHistory')) || [];
+        const saveHistory = () => localStorage.setItem('nyanpoHistory', JSON.stringify(runHistory));
+        
         const updateTimer = () => {
             if (!isRunning || isPaused) return;
-            const now = Date.now();
-            const elapsed = now - startTime - totalPausedTime;
-            const hours = Math.floor(elapsed / 3600000);
-            const minutes = Math.floor((elapsed % 3600000) / 60000);
-            const seconds = Math.floor((elapsed % 60000) / 1000);
-            timerEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            const elapsed = Date.now() - startTime - totalPausedTime;
+            const h = Math.floor(elapsed / 3600000);
+            const m = Math.floor((elapsed % 3600000) / 60000);
+            const s = Math.floor((elapsed % 60000) / 1000);
+            timerEl.textContent = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
         };
         
         const updateStats = () => {
-            const distanceKm = totalDistance / 1000;
-            distanceEl.textContent = distanceKm.toFixed(2);
-            
+            const distKm = totalDistance / 1000;
+            distanceEl.textContent = distKm.toFixed(2);
             stepsEl.textContent = Math.round(totalDistance / AVERAGE_STRIDE_METERS);
-
-            const elapsedSeconds = (Date.now() - startTime - totalPausedTime) / 1000;
-            if (distanceKm > 0 && elapsedSeconds > 0) {
-                const paceSecondsPerKm = elapsedSeconds / distanceKm;
-                const paceMinutes = Math.floor(paceSecondsPerKm / 60);
-                const paceSeconds = Math.floor(paceSecondsPerKm % 60);
-                paceEl.textContent = `${String(paceMinutes).padStart(2, '0')}:${String(paceSeconds).padStart(2, '0')}`;
-            } else {
-                paceEl.textContent = '--:--';
-            }
+            const elapsedSecs = (Date.now() - startTime - totalPausedTime) / 1000;
+            if (distKm > 0 && elapsedSecs > 0) {
+                const paceSecsPerKm = elapsedSecs / distKm;
+                const paceM = Math.floor(paceSecsPerKm / 60);
+                const paceS = Math.floor(paceSecsPerKm % 60);
+                paceEl.textContent = `${String(paceM).padStart(2, '0')}:${String(paceS).padStart(2, '0')}`;
+            } else paceEl.textContent = '--:--';
+        };
+        
+        const getCatComment = (km) => {
+            if (km > 10) return "プロのおさんぽマスターだにゃ！";
+            if (km > 5) return "すごいにゃ！いっぱい走ったんだにゃ！";
+            if (km > 2) return "いい運動になったにゃ！また行こうにゃ！";
+            if (km > 0.5) return "楽しいおさんぽだったにゃ！";
+            return "のんびりおさんぽもいいものだにゃ〜";
         };
 
         const renderHistory = () => {
             historyList.innerHTML = '';
             if (runHistory.length === 0) {
-                historyList.innerHTML = `<div class="text-center text-sub p-8"><i data-lucide="archive-x" class="w-16 h-16 mx-auto"></i><p class="mt-4">まだ履歴はありません。</p></div>`;
-                lucide.createIcons(); return;
+                historyList.innerHTML = `<div class="text-center text-orange-700/60 p-8"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><path d="M12.38 2.62a1 1 0 0 0-1.09.21l-4.1 4.1a1 1 0 0 0 .71 1.71h8.2a1 1 0 0 0 .71-1.71l-4.1-4.1a1 1 0 0 0-1.11-.21z"/><path d="M5.5 8.5v5.8a1 1 0 0 0 .5 1.71h12a1 1 0 0 0 .5-1.71V8.5"/><path d="M18.5 14.3v4.6a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-4.6"/></svg><p class="mt-4">まだ履歴はにゃいみたい。</p></div>`;
+                return;
             }
             [...runHistory].reverse().forEach(run => {
                 const item = document.createElement('div');
-                item.className = 'bg-dark p-4 rounded-lg';
+                item.className = 'bg-white/80 p-4 rounded-xl';
                 item.innerHTML = `
-                    <p class="font-bold">${new Date(run.date).toLocaleString('ja-JP')}</p>
-                    <div class="grid grid-cols-3 gap-2 mt-2 text-center">
-                        <div><p class="text-xs text-sub">距離</p><p>${run.distance.toFixed(2)} km</p></div>
-                        <div><p class="text-xs text-sub">時間</p><p>${run.time}</p></div>
-                        <div><p class="text-xs text-sub">ペース</p><p>${run.pace}</p></div>
+                    <p class="font-bold text-sm text-orange-800">${new Date(run.date).toLocaleString('ja-JP')}</p>
+                    <p class="text-base font-bold text-orange-900 mt-2">"${run.comment}"</p>
+                    <div class="grid grid-cols-3 gap-2 mt-3 text-center">
+                        <div><p class="text-xs text-orange-500">距離</p><p class="font-bold">${run.distance.toFixed(2)} km</p></div>
+                        <div><p class="text-xs text-orange-500">時間</p><p class="font-bold">${run.time}</p></div>
+                        <div><p class="text-xs text-orange-500">ペース</p><p class="font-bold">${run.pace}</p></div>
                     </div>
                 `;
                 historyList.appendChild(item);
             });
         };
         
-        // --- Run Logic ---
+        const toggleRunState = () => {
+            if (!isRunning) startRun();
+            else pauseRun();
+        }
+
         const startRun = () => {
-            if (isRunning) return;
             resetState();
-            isRunning = true;
-            isPaused = false;
-            startTime = Date.now();
-            totalPausedTime = 0;
+            isRunning = true; isPaused = false;
+            startTime = Date.now(); totalPausedTime = 0;
             timerInterval = setInterval(updateTimer, 1000);
             
-            startBtn.classList.add('hidden');
-            pauseBtn.classList.remove('hidden');
-            pauseBtn.style.display = 'flex';
-            stopBtn.classList.remove('hidden');
-            stopBtn.style.display = 'flex';
+            startBtn.innerHTML = pauseIconSVG;
+            stopBtn.classList.remove('hidden'); stopBtn.style.display = 'flex';
             
-            polyline = L.polyline([], { color: '#06b6d4', weight: 5 }).addTo(map);
+            polyline = L.polyline([], { color: '#F97316', weight: 6, opacity: 0.8 }).addTo(map);
 
-            watchId = navigator.geolocation.watchPosition(
-                updatePosition,
-                handleLocationError,
-                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
-            );
+            watchId = navigator.geolocation.watchPosition(updatePosition, handleLocationError, { enableHighAccuracy: true });
         };
         
         const pauseRun = () => {
-            if (!isRunning) return;
-            if (isPaused) { // Resume
-                isPaused = false;
-                totalPausedTime += Date.now() - pausedTime;
-                pauseBtn.innerHTML = `<i data-lucide="pause" class="w-10 h-10"></i>`;
-                lucide.createIcons();
-            } else { // Pause
-                isPaused = true;
+            isPaused = !isPaused;
+            if (isPaused) {
                 pausedTime = Date.now();
-                pauseBtn.innerHTML = `<i data-lucide="play" class="w-10 h-10"></i>`;
-                lucide.createIcons();
+                startBtn.innerHTML = pawIconSVG;
+            } else {
+                totalPausedTime += Date.now() - pausedTime;
+                startBtn.innerHTML = pauseIconSVG;
             }
         };
 
         const stopRun = () => {
-            if (!isRunning) return;
-            
-            // Save final run data
-            const finalDistanceKm = totalDistance / 1000;
-            const finalTime = timerEl.textContent;
-            const finalPace = paceEl.textContent;
-            if (finalDistanceKm > 0.01) { // Only save meaningful runs
+            const finalDistKm = totalDistance / 1000;
+            if (finalDistKm > 0.01) {
                 runHistory.push({
-                    date: new Date().toISOString(),
-                    distance: finalDistanceKm,
-                    time: finalTime,
-                    pace: finalPace
+                    date: new Date().toISOString(), distance: finalDistKm,
+                    time: timerEl.textContent, pace: paceEl.textContent,
+                    comment: getCatComment(finalDistKm)
                 });
                 saveHistory();
             }
-            
             resetState(true);
         };
 
         const resetState = (isStopping = false) => {
-            isRunning = false; isPaused = false;
-            clearInterval(timerInterval);
-            if (watchId) navigator.geolocation.clearWatch(watchId);
-            watchId = null;
-            
-            startBtn.classList.remove('hidden');
-            pauseBtn.classList.add('hidden');
-            stopBtn.classList.add('hidden');
-            
             if (isStopping) {
-                totalDistance = 0;
-                routeCoordinates = [];
-                distanceEl.textContent = '0.00';
-                paceEl.textContent = '--:--';
-                timerEl.textContent = '00:00:00';
-                stepsEl.textContent = '0';
+                isRunning = false; isPaused = false;
+                clearInterval(timerInterval);
+                if (watchId) navigator.geolocation.clearWatch(watchId); watchId = null;
+                
+                startBtn.innerHTML = pawIconSVG;
+                stopBtn.classList.add('hidden');
+                
+                totalDistance = 0; routeCoordinates = [];
+                distanceEl.textContent = '0.00'; paceEl.textContent = '--:--';
+                timerEl.textContent = '00:00:00'; stepsEl.textContent = '0';
                 if(polyline) map.removeLayer(polyline);
                 if(userMarker) map.removeLayer(userMarker);
                 polyline = null; userMarker = null;
             }
         };
 
-        // --- Geolocation Handlers ---
         const updatePosition = (position) => {
-            if(isPaused) return;
+            if (isPaused) return;
             const { latitude, longitude } = position.coords;
             const newCoord = [latitude, longitude];
-
             map.setView(newCoord, 17);
             
-            if (userMarker) {
-                userMarker.setLatLng(newCoord);
-            } else {
-                userMarker = L.circle(newCoord, {
-                    color: '#67e8f9',
-                    fillColor: '#06b6d4',
-                    fillOpacity: 0.8,
-                    radius: 8
-                }).addTo(map);
-            }
+            if (userMarker) userMarker.setLatLng(newCoord);
+            else userMarker = L.marker(newCoord, { icon: catIcon }).addTo(map);
             
             if (routeCoordinates.length > 0) {
-                const lastCoord = routeCoordinates[routeCoordinates.length - 1];
-                totalDistance += L.latLng(lastCoord).distanceTo(L.latLng(newCoord));
+                totalDistance += L.latLng(routeCoordinates[routeCoordinates.length - 1]).distanceTo(L.latLng(newCoord));
             }
-
             routeCoordinates.push(newCoord);
             polyline.setLatLngs(routeCoordinates);
             updateStats();
         };
 
-        const handleLocationError = (error) => {
-            console.error(error);
-            getEl('permission-overlay').style.display = 'flex';
-        };
+        const handleLocationError = (error) => getEl('permission-overlay').style.display = 'flex';
 
-        // --- Event Listeners ---
         const attachEventListeners = () => {
-            startBtn.addEventListener('click', startRun);
-            pauseBtn.addEventListener('click', pauseRun);
-            stopBtn.addEventListener('click', () => { if(confirm('ランニングを終了しますか？')) stopRun(); });
+            startBtn.addEventListener('click', toggleRunState);
+            stopBtn.addEventListener('click', () => { if(confirm('おさんぽを終わりにしますか？')) stopRun(); });
 
             historyBtn.addEventListener('click', () => {
                 renderHistory();
@@ -341,4 +270,6 @@
     </script>
 </body>
 </html>
+
+
 
