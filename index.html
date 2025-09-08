@@ -27,14 +27,9 @@
         .dragging { opacity: 0.5; transform: scale(1.02); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
         .drag-placeholder { background-color: rgba(199, 210, 254, 0.4); border: 2px dashed #a5b4fc; height: 100px; border-radius: 0.75rem; }
         
-        /* Styles for the image export container (hidden from view) */
         .image-export-container {
-            position: absolute;
-            left: -9999px;
-            top: 0;
-            width: 800px;
-            padding: 40px;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            position: absolute; left: -9999px; top: 0; width: 800px;
+            padding: 40px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             font-family: 'Noto Sans JP', sans-serif;
         }
     </style>
@@ -82,18 +77,43 @@
     </div>
 
     <!-- Modals and Overlays -->
-    <!-- (Spot modal and plan list modal are unchanged) -->
     <div id="spot-modal" class="modal fixed inset-0 z-30 flex flex-col justify-end bg-black bg-opacity-50 hidden">
-        <div class="modal-content w-full max-w-lg mx-auto bg-gray-50 rounded-t-2xl p-5 transform translate-y-full touch-action-none flex flex-col max-h-[90vh]"><!-- ... content identical to previous version ... --></div>
+        <div class="modal-content w-full max-w-lg mx-auto bg-gray-50 rounded-t-2xl p-5 transform translate-y-full touch-action-none flex flex-col max-h-[90vh]">
+            <div class="text-center mb-4 flex-shrink-0"><div class="inline-block w-10 h-1.5 bg-gray-300 rounded-full"></div></div>
+            <h3 id="modal-title" class="text-xl font-bold text-center mb-5 flex-shrink-0">新しいスポット</h3>
+            <form id="spot-form" class="flex-grow overflow-y-auto pr-2">
+                 <input type="hidden" id="spot-id">
+                 <div class="space-y-4">
+                     <div class="flex space-x-3">
+                         <div class="flex-1"><label for="spot-time" class="block text-sm font-medium text-gray-600 mb-1">時間</label><input type="time" id="spot-time" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg" required></div>
+                         <div class="flex-1"><label for="spot-category" class="block text-sm font-medium text-gray-600 mb-1">カテゴリ</label><select id="spot-category" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg"><option>🍽️ 食事</option><option>☕ カフェ</option><option>🎬 映画</option><option>🛍️ ショッピング</option><option>🌳 公園</option><option>🎨 美術館</option><option>🏰 観光</option><option>🎁 プレゼント</option><option>その他</option></select></div>
+                     </div>
+                     <div>
+                         <label for="spot-search" class="block text-sm font-medium text-gray-600 mb-1">場所を検索</label>
+                         <div class="flex"><input type="text" id="spot-search" placeholder="例: 東京タワー, 渋谷カフェ" class="w-full p-2.5 bg-white border border-gray-300 rounded-l-lg"><button type="button" id="search-location-btn" class="bg-blue-500 text-white px-4 rounded-r-lg hover:bg-blue-600 flex items-center"><i data-lucide="search" class="w-5 h-5"></i></button></div>
+                         <div id="search-results" class="mt-2 max-h-32 overflow-y-auto border rounded-lg bg-white"></div>
+                         <div class="mt-2 bg-blue-50 p-2 rounded-lg text-sm"><p id="selected-location-name" class="text-blue-800">場所を選択してください</p><input type="hidden" id="spot-name"><input type="hidden" id="spot-lat"><input type="hidden" id="spot-lon"></div>
+                     </div>
+                     <div><label for="spot-station" class="block text-sm font-medium text-gray-600 mb-1">最寄り駅 <span class="text-xs text-gray-400">(任意)</span></label><input type="text" id="spot-station" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg"></div>
+                     <div><label for="spot-memo" class="block text-sm font-medium text-gray-600 mb-1">メモ <span class="text-xs text-gray-400">(任意)</span></label><textarea id="spot-memo" rows="2" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg"></textarea></div>
+                 </div>
+            </form>
+            <div class="mt-5 pt-4 border-t border-gray-200 flex space-x-3 flex-shrink-0">
+                <button type="button" id="cancel-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-colors">キャンセル</button>
+                <button type="submit" form="spot-form" id="save-spot-btn" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg transition-colors">保存</button>
+            </div>
+        </div>
     </div>
     <div id="plan-list-modal" class="modal fixed inset-0 z-40 bg-black bg-opacity-50 hidden">
         <div class="absolute inset-0" id="plan-list-modal-backdrop"></div>
-        <div class="modal-content w-full max-w-lg mx-auto bg-gray-50 rounded-t-2xl p-5 transform translate-y-full flex flex-col max-h-[90vh]"><!-- ... content identical to previous version ... --></div>
+        <div class="modal-content w-full max-w-lg mx-auto bg-gray-50 rounded-t-2xl p-5 transform translate-y-full flex flex-col max-h-[90vh]">
+            <h3 class="text-xl font-bold text-center mb-5 flex-shrink-0">プラン一覧</h3>
+            <div id="saved-plans-container" class="flex-grow overflow-y-auto space-y-3"></div>
+        </div>
     </div>
     
     <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-gray-800 text-white py-2 px-5 rounded-full shadow-lg opacity-0 transform -translate-y-10 transition-all duration-300 z-50"></div>
 
-    <!-- Loading Overlay for Image Generation -->
     <div id="loading-overlay" class="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center hidden">
         <div class="bg-white text-gray-800 rounded-lg p-6 flex items-center shadow-xl">
             <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -108,9 +128,14 @@
 
         let allPlans = {};
         let currentPlan = { id: null, title: '', spots: [] };
-        let map; let markers = {};
+        let map; let markers = {}; let draggedItem = null;
 
-        // --- Initialization and Core Functions ---
+        const planTitleInput = getEl('plan-title');
+        const planList = getEl('plan-list');
+        const toast = getEl('toast');
+        const spotModal = getEl('spot-modal');
+        const planListModal = getEl('plan-list-modal');
+
         const init = () => {
             lucide.createIcons();
             initMap();
@@ -119,171 +144,70 @@
             attachEventListeners();
         };
 
-        const initMap = () => { /* ... identical to previous version ... */ };
+        const initMap = () => {
+            map = L.map('map').setView([35.681236, 139.767125], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+        };
         
-        // --- UI Rendering ---
-        // renderPlanList, updateMapMarkers, renderPlanListModal are identical
-        const renderPlanList = () => { /* ... identical to previous version ... */ };
-        const updateMapMarkers = () => { /* ... identical to previous version ... */ };
-        const renderPlanListModal = () => { /* ... identical to previous version ... */ };
-
-        // --- Data Management ---
-        // All data functions are identical to previous version
-        const loadAllPlans = () => { /* ... */ };
-        const saveAllPlans = () => { /* ... */ };
-        const saveCurrentPlan = () => { /* ... */ };
-        const startNewPlan = () => { /* ... */ };
-        const loadPlan = (planId) => { /* ... */ };
-        const deletePlan = (planId) => { /* ... */ };
-
-        // --- Modals & Notifications ---
-        const showToast = (message) => { /* ... */ };
-        const openModal = (modal) => { /* ... */ };
-        const closeModal = (modal) => { /* ... */ };
-        const openSpotModal = (spot = null) => { /* ... */ };
-
-        // --- NEW FEATURE: Image Export ---
-        const handleExportImage = async () => {
-            if (!currentPlan.title || currentPlan.spots.length === 0) {
-                showToast("保存するプランがありません");
-                return;
+        const renderPlanList = () => {
+            planList.innerHTML = '';
+            if (currentPlan.spots.length === 0) {
+                planList.innerHTML = `<div class="text-center text-gray-400 p-8 mt-10"><i data-lucide="calendar-heart" class="w-20 h-20 mx-auto text-gray-300"></i><p class="mt-4">下の「+」ボタンから予定を追加しましょう！</p></div>`;
+                lucide.createIcons(); return;
             }
-
-            const loadingOverlay = getEl('loading-overlay');
-            loadingOverlay.classList.remove('hidden');
-
-            // Create a temporary container for rendering the image content
-            const tempContainer = document.createElement('div');
-            tempContainer.className = 'image-export-container';
-
-            const today = new Date();
-            const dateString = `${today.getFullYear()}/${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
-
-            let content = `
-                <div style="text-align: center; border-bottom: 2px solid #e0e0e0; padding-bottom: 20px; margin-bottom: 20px;">
-                    <h1 style="font-size: 42px; font-weight: 700; color: #333; margin: 0;">${currentPlan.title}</h1>
-                    <p style="font-size: 20px; color: #666; margin-top: 8px;">${dateString}</p>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr; gap: 20px;">
-            `;
-
-            currentPlan.spots.forEach(spot => {
-                const iconSvg = lucide.icons[categoryIcons[spot.category] || 'more-horizontal'].toSvg({
-                    width: 24, height: 24, color: '#4f46e5'
-                });
-                content += `
-                    <div style="background-color: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); display: flex; align-items: flex-start;">
-                        <div style="flex-shrink: 0; width: 60px; text-align: center;">
-                            <p style="font-size: 24px; font-weight: 700; color: #4f46e5;">${spot.time.split(':')[0]}</p>
-                            <p style="font-size: 18px; color: #4f46e5; margin-top: -4px;">${spot.time.split(':')[1]}</p>
+            currentPlan.spots.forEach((spot) => {
+                const iconName = categoryIcons[spot.category] || 'more-horizontal';
+                const spotEl = document.createElement('div');
+                spotEl.className = 'p-4 bg-white rounded-xl border border-gray-200 shadow-sm cursor-grab active:cursor-grabbing';
+                spotEl.dataset.id = spot.id; spotEl.draggable = true;
+                spotEl.innerHTML = `
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 w-12 text-center pt-1"><p class="text-xl font-bold text-indigo-500">${spot.time.split(':')[0]}</p><p class="text-md text-indigo-500 -mt-1">${spot.time.split(':')[1]}</p></div>
+                        <div class="ml-3 flex-grow border-l-2 border-indigo-200 pl-4">
+                            <div class="flex items-center text-sm text-gray-500"><i data-lucide="${iconName}" class="w-4 h-4 mr-2"></i><span>${spot.category.substring(3)}</span></div>
+                            <p class="font-semibold text-gray-800 text-lg">${spot.name}</p>
+                            <p class="text-xs text-gray-400 mt-1">${spot.station || ''}</p>
                         </div>
-                        <div style="border-left: 2px solid #e5e7eb; padding-left: 20px; margin-left: 20px; flex-grow: 1;">
-                            <div style="display: flex; align-items: center; font-size: 18px; color: #555;">
-                                ${iconSvg}
-                                <span style="margin-left: 10px;">${spot.category.substring(3)}</span>
-                            </div>
-                            <p style="font-size: 26px; font-weight: 600; color: #111; margin: 8px 0;">${spot.name}</p>
-                            ${spot.station ? `<p style="font-size: 16px; color: #666; margin-top: 8px;">📍 最寄り駅: ${spot.station}</p>` : ''}
-                            ${spot.memo ? `<p style="font-size: 16px; color: #666; margin-top: 4px;">📝 メモ: ${spot.memo}</p>` : ''}
-                        </div>
-                    </div>
-                `;
+                        <div class="flex flex-col space-y-2"><button class="edit-btn p-1 text-gray-400 hover:text-blue-500" data-id="${spot.id}"><i data-lucide="edit" class="w-4 h-4 pointer-events-none"></i></button><button class="delete-btn p-1 text-gray-400 hover:text-red-500" data-id="${spot.id}"><i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i></button></div>
+                    </div>`;
+                planList.appendChild(spotEl);
             });
-            content += `</div>`;
-            tempContainer.innerHTML = content;
-            document.body.appendChild(tempContainer);
-
-            try {
-                const canvas = await html2canvas(tempContainer, {
-                    scale: 2, // Higher resolution
-                    useCORS: true,
-                    backgroundColor: null
-                });
-                const link = document.createElement('a');
-                link.download = `${currentPlan.title.replace(/ /g, '_')}_plan.png`;
-                link.href = canvas.toDataURL("image/png");
-                link.click();
-                showToast("画像を保存しました！");
-            } catch (err) {
-                console.error("Image generation failed:", err);
-                showToast("画像の保存に失敗しました");
-            } finally {
-                loadingOverlay.classList.add('hidden');
-                document.body.removeChild(tempContainer);
-            }
+            lucide.createIcons();
+            updateMapMarkers();
+        };
+        
+        const updateMapMarkers = () => {
+            Object.values(markers).forEach(marker => marker.remove()); markers = {}; const latLngs = [];
+            currentPlan.spots.forEach((spot, index) => {
+                if (spot.lat && spot.lon) {
+                    const latLng = [spot.lat, spot.lon]; latLngs.push(latLng);
+                    const icon = L.divIcon({ html: `<div class="bg-indigo-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold text-md shadow-lg border-2 border-white">${index + 1}</div>`, className: '', iconSize: [28, 28], iconAnchor: [14, 14] });
+                    const marker = L.marker(latLng, { icon }).addTo(map).bindPopup(`<b>${index + 1}. ${spot.name}</b><br>${spot.time}`);
+                    markers[spot.id] = marker;
+                }
+            });
+            if (latLngs.length > 0) map.fitBounds(latLngs, { padding: [50, 50] });
         };
 
-        // --- Event Listener Attachment ---
-        const attachEventListeners = () => {
-            // (All previous event listeners remain the same)
-            
-            // Add listener for the new button
-            getEl('export-image-btn').addEventListener('click', handleExportImage);
-
-            // ... The rest of the event listeners are identical and put here for completeness
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', (e) => {
-                const targetView = e.currentTarget.dataset.view;
-                document.querySelectorAll('.nav-btn').forEach(b => b.classList.replace('text-indigo-500', 'text-gray-400'));
-                e.currentTarget.classList.replace('text-gray-400', 'text-indigo-500');
-                ['timeline-view', 'map-view'].forEach(id => getEl(id).classList.add('hidden'));
-                getEl(targetView).classList.remove('hidden');
-                if (targetView === 'map-view') setTimeout(() => map.invalidateSize(), 1);
-            }));
-            getEl('add-spot-btn').addEventListener('click', () => openSpotModal());
-            getEl('cancel-btn').addEventListener('click', () => closeModal(getEl('spot-modal')));
-            getEl('spot-modal').addEventListener('click', (e) => e.target === getEl('spot-modal') && closeModal(getEl('spot-modal')));
-            getEl('spot-form').addEventListener('submit', (e) => { /* form submit logic */ });
-            getEl('my-plans-btn').addEventListener('click', () => { renderPlanListModal(); openModal(getEl('plan-list-modal')); });
-            getEl('plan-list-modal-backdrop').addEventListener('click', () => closeModal(getEl('plan-list-modal')));
-            getEl('saved-plans-container').addEventListener('click', (e) => {
-                if (e.target.classList.contains('load-plan-btn')) loadPlan(e.target.dataset.id);
-                if (e.target.classList.contains('delete-plan-btn')) deletePlan(e.target.dataset.id);
+        const renderPlanListModal = () => {
+            const container = getEl('saved-plans-container');
+            container.innerHTML = '';
+            const plans = Object.values(allPlans);
+            if (plans.length === 0) {
+                container.innerHTML = `<div class="text-center text-gray-400 p-8"><i data-lucide="folder-x" class="w-16 h-16 mx-auto text-gray-300"></i><p class="mt-4">保存されたプランはありません。</p></div>`;
+                lucide.createIcons(); return;
+            }
+            plans.forEach(plan => {
+                const planEl = document.createElement('div');
+                planEl.className = 'p-4 bg-white rounded-lg shadow-sm flex justify-between items-center';
+                planEl.innerHTML = `<span class="font-semibold">${plan.title}</span><div class="space-x-2"><button class="load-plan-btn bg-blue-500 text-white py-1 px-3 rounded text-sm" data-id="${plan.id}">読込</button><button class="delete-plan-btn bg-red-500 text-white py-1 px-3 rounded text-sm" data-id="${plan.id}">削除</button></div>`;
+                container.appendChild(planEl);
             });
-            getEl('save-plan-btn').addEventListener('click', saveCurrentPlan);
-            getEl('new-plan-btn').addEventListener('click', () => { if (currentPlan.spots.length > 0 && confirm('現在のプランは保存されていません。破棄して新規作成しますか？')) startNewPlan(); else if (currentPlan.spots.length === 0) startNewPlan(); });
-            getEl('search-location-btn').addEventListener('click', ()=>{ /* search logic */ });
-            getEl('plan-list').addEventListener('click', ()=>{ /* edit/delete spot logic */ });
-            // D&D listeners are also unchanged
         };
 
-        // All other functions are omitted for brevity as they are unchanged.
-        // The full script logic from the previous version should be assumed to be here.
-        // Just paste the new handleExportImage function and the new event listener.
-        // The placeholder comments below represent the unchanged functions.
+        const loadAllPlans = () => { allPlans = JSON.parse(localStorage.getItem('datePlannerAllPlans')) || {}; };
+        const saveAllPlans = () => { localStorage.setItem('datePlannerAllPlans', JSON.stringify(allPlans)); };
         
-        const handleFormSubmit = (e) => { /* ... (omitted for brevity, same as previous version) ... */ };
-        const handleLocationSearch = async () => { /* ... (omitted for brevity, same as previous version) ... */ };
-        const handleDragAndDrop = { /* ... (omitted for brevity, same as previous version) ... */ };
-        
-        // This is a simplified representation. In the actual file, the full, unchanged functions would be present.
-        init();
-    });
-
-    // Dummy functions to fill in for the omitted logic in this example
-    // In the real file, these would be the full functions from the previous step.
-    const a = () => {
-        const getEl = (id) => document.getElementById(id);
-        const planListModal = getEl('plan-list-modal');
-        const spotModal = getEl('spot-modal');
-        const toast = getEl('toast');
-        const planTitleInput = getEl('plan-title');
-        const planList = getEl('plan-list');
-        let allPlans = {};
-        let currentPlan = { id: null, title: '', spots: [] };
-
-        const renderPlanList = () => {};
-        const updateMapMarkers = () => {};
-        const renderPlanListModal = () => {};
-        const loadAllPlans = () => {};
-        const saveAllPlans = () => {};
-        const startNewPlan = () => {};
-        const showToast = (message) => {};
-        const openModal = (modal) => {};
-        const closeModal = (modal) => {};
-        const openSpotModal = (spot = null) => {};
-        const loadPlan = (planId) => {};
-        const deletePlan = (planId) => {};
-
         const saveCurrentPlan = () => {
             currentPlan.title = planTitleInput.value.trim();
             if (!currentPlan.title) { showToast("プラン名を入力してください"); return; }
@@ -292,9 +216,200 @@
             saveAllPlans();
             showToast("プランを保存しました");
         };
-    }
+
+        const startNewPlan = () => {
+            currentPlan = { id: null, title: '', spots: [] };
+            planTitleInput.value = '';
+            renderPlanList();
+        };
+
+        const loadPlan = (planId) => {
+            currentPlan = JSON.parse(JSON.stringify(allPlans[planId])); // Deep copy
+            planTitleInput.value = currentPlan.title;
+            renderPlanList();
+            closeModal(planListModal);
+            showToast(`「${currentPlan.title}」を読み込みました`);
+        };
+
+        const deletePlan = (planId) => {
+            if (confirm(`「${allPlans[planId].title}」を本当に削除しますか？`)) {
+                if(currentPlan.id == planId) startNewPlan();
+                delete allPlans[planId];
+                saveAllPlans();
+                renderPlanListModal();
+                showToast("プランを削除しました");
+            }
+        };
+
+        const showToast = (message) => { toast.textContent = message; toast.classList.remove('opacity-0', '-translate-y-10'); setTimeout(() => toast.classList.add('opacity-0', '-translate-y-10'), 2500); };
+        const openModal = (modal) => { modal.classList.remove('hidden'); requestAnimationFrame(() => modal.classList.add('open')); };
+        const closeModal = (modal) => { modal.classList.remove('open'); setTimeout(() => modal.classList.add('hidden'), 300); };
+
+        const openSpotModal = (spot = null) => {
+            getEl('spot-form').reset(); getEl('search-results').innerHTML = '';
+            if (spot) {
+                getEl('modal-title').textContent = 'スポットを編集'; getEl('spot-id').value = spot.id; getEl('spot-time').value = spot.time; getEl('spot-category').value = spot.category; getEl('spot-name').value = spot.name; getEl('spot-lat').value = spot.lat; getEl('spot-lon').value = spot.lon; getEl('spot-station').value = spot.station; getEl('spot-memo').value = spot.memo; getEl('selected-location-name').textContent = spot.name;
+            } else {
+                getEl('modal-title').textContent = '新しいスポット'; getEl('spot-id').value = ''; getEl('selected-location-name').textContent = '場所を検索して選択してください';
+            }
+            openModal(spotModal);
+        };
+        
+        const handleFormSubmit = (e) => {
+            e.preventDefault();
+            const id = getEl('spot-id').value;
+            const spotData = {
+                time: getEl('spot-time').value, category: getEl('spot-category').value, name: getEl('spot-name').value, lat: getEl('spot-lat').value, lon: getEl('spot-lon').value, station: getEl('spot-station').value, memo: getEl('spot-memo').value
+            };
+            if (!spotData.name || !spotData.lat) { showToast('場所を検索して選択してください'); return; }
+            if (id) {
+                const index = currentPlan.spots.findIndex(s => s.id == id); if (index > -1) currentPlan.spots[index] = { ...currentPlan.spots[index], ...spotData };
+            } else {
+                currentPlan.spots.push({ id: Date.now(), ...spotData });
+            }
+            currentPlan.spots.sort((a,b) => a.time.localeCompare(b.time));
+            renderPlanList(); closeModal(spotModal); showToast(id ? 'スポットを更新しました' : 'スポットを追加しました');
+        };
+
+        const handleLocationSearch = async () => {
+            const query = getEl('spot-search').value; if (!query) return;
+            const resultsEl = getEl('search-results'); resultsEl.innerHTML = `<div class="p-2 text-center">検索中...</div>`;
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1`);
+                const data = await res.json(); resultsEl.innerHTML = '';
+                if (data && data.length > 0) {
+                    data.slice(0, 5).forEach(item => {
+                        const resultEl = document.createElement('div');
+                        resultEl.className = 'p-2 border-b cursor-pointer hover:bg-gray-100 text-sm';
+                        resultEl.textContent = item.display_name;
+                        resultEl.onclick = () => {
+                            getEl('spot-name').value = item.display_name.split(',')[0]; getEl('spot-lat').value = item.lat; getEl('spot-lon').value = item.lon;
+                            getEl('selected-location-name').textContent = item.display_name; resultsEl.innerHTML = '';
+                        };
+                        resultsEl.appendChild(resultEl);
+                    });
+                } else resultsEl.innerHTML = `<div class="p-2 text-center text-gray-500">見つかりませんでした</div>`;
+            } catch (error) { resultsEl.innerHTML = `<div class="p-2 text-center text-red-500">検索エラー</div>`; }
+        };
+
+        const handleExportImage = async () => {
+            if (!currentPlan.title || currentPlan.spots.length === 0) {
+                showToast("画像として保存できるプランがありません"); return;
+            }
+            const loadingOverlay = getEl('loading-overlay');
+            loadingOverlay.classList.remove('hidden');
+            const tempContainer = document.createElement('div');
+            tempContainer.className = 'image-export-container';
+            const today = new Date();
+            const dateString = `${today.getFullYear()}/${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
+            let content = `
+                <div style="text-align: center; border-bottom: 2px solid #e0e0e0; padding-bottom: 20px; margin-bottom: 20px;">
+                    <h1 style="font-size: 42px; font-weight: 700; color: #333; margin: 0;">${currentPlan.title}</h1>
+                    <p style="font-size: 20px; color: #666; margin-top: 8px;">${dateString}</p>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr; gap: 20px;">`;
+            currentPlan.spots.forEach(spot => {
+                const iconSvg = lucide.icons[categoryIcons[spot.category] || 'more-horizontal'].toSvg({ width: 24, height: 24, color: '#4f46e5' });
+                content += `
+                    <div style="background-color: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); display: flex; align-items: flex-start;">
+                        <div style="flex-shrink: 0; width: 60px; text-align: center;">
+                            <p style="font-size: 24px; font-weight: 700; color: #4f46e5;">${spot.time.split(':')[0]}</p>
+                            <p style="font-size: 18px; color: #4f46e5; margin-top: -4px;">${spot.time.split(':')[1]}</p>
+                        </div>
+                        <div style="border-left: 2px solid #e5e7eb; padding-left: 20px; margin-left: 20px; flex-grow: 1;">
+                            <div style="display: flex; align-items: center; font-size: 18px; color: #555;">${iconSvg}<span style="margin-left: 10px;">${spot.category.substring(3)}</span></div>
+                            <p style="font-size: 26px; font-weight: 600; color: #111; margin: 8px 0;">${spot.name}</p>
+                            ${spot.station ? `<p style="font-size: 16px; color: #666; margin-top: 8px;">📍 最寄り駅: ${spot.station}</p>` : ''}
+                            ${spot.memo ? `<p style="font-size: 16px; color: #666; margin-top: 4px;">📝 メモ: ${spot.memo}</p>` : ''}
+                        </div>
+                    </div>`;
+            });
+            content += `</div>`;
+            tempContainer.innerHTML = content;
+            document.body.appendChild(tempContainer);
+            try {
+                const canvas = await html2canvas(tempContainer, { scale: 2, useCORS: true, backgroundColor: null });
+                const link = document.createElement('a');
+                link.download = `${currentPlan.title.replace(/ /g, '_')}_plan.png`;
+                link.href = canvas.toDataURL("image/png");
+                link.click();
+                showToast("画像を保存しました！");
+            } catch (err) { console.error("Image generation failed:", err); showToast("画像の保存に失敗しました");
+            } finally { loadingOverlay.classList.add('hidden'); document.body.removeChild(tempContainer); }
+        };
+
+        const attachEventListeners = () => {
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', (e) => {
+                const targetView = e.currentTarget.dataset.view;
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.replace('text-indigo-500', 'text-gray-400'));
+                e.currentTarget.classList.replace('text-gray-400', 'text-indigo-500');
+                ['timeline-view', 'map-view'].forEach(id => getEl(id).classList.add('hidden'));
+                getEl(targetView).classList.remove('hidden');
+                if (targetView === 'map-view') setTimeout(() => map.invalidateSize(), 1);
+            }));
+            
+            getEl('add-spot-btn').addEventListener('click', () => openSpotModal());
+            getEl('cancel-btn').addEventListener('click', () => closeModal(spotModal));
+            spotModal.addEventListener('click', (e) => e.target === spotModal && closeModal(spotModal));
+            getEl('spot-form').addEventListener('submit', handleFormSubmit);
+
+            getEl('my-plans-btn').addEventListener('click', () => { renderPlanListModal(); openModal(planListModal); });
+            getEl('plan-list-modal-backdrop').addEventListener('click', () => closeModal(planListModal));
+            getEl('saved-plans-container').addEventListener('click', (e) => {
+                if (e.target.classList.contains('load-plan-btn')) loadPlan(e.target.dataset.id);
+                if (e.target.classList.contains('delete-plan-btn')) deletePlan(e.target.dataset.id);
+            });
+
+            getEl('save-plan-btn').addEventListener('click', saveCurrentPlan);
+            getEl('new-plan-btn').addEventListener('click', () => { 
+                if (currentPlan.spots.length > 0 && !allPlans[currentPlan.id]) {
+                    if (confirm('現在のプランは保存されていません。破棄して新規作成しますか？')) startNewPlan();
+                } else {
+                    startNewPlan();
+                }
+            });
+            
+            getEl('search-location-btn').addEventListener('click', handleLocationSearch);
+            getEl('spot-search').addEventListener('keydown', (e) => e.key === 'Enter' && (e.preventDefault(), handleLocationSearch()));
+
+            planList.addEventListener('click', (e) => {
+                const editBtn = e.target.closest('.edit-btn'); const deleteBtn = e.target.closest('.delete-btn');
+                if(editBtn) { const spot = currentPlan.spots.find(s => s.id == editBtn.dataset.id); if(spot) openSpotModal(spot); }
+                if(deleteBtn) { if(confirm('このスポットを削除しますか？')) { currentPlan.spots = currentPlan.spots.filter(s => s.id != deleteBtn.dataset.id); renderPlanList(); showToast('スポットを削除しました'); } }
+            });
+
+            planList.addEventListener('dragstart', (e) => { draggedItem = e.target; setTimeout(() => e.target.classList.add('dragging'), 0); });
+            planList.addEventListener('dragend', (e) => {
+                if (!draggedItem) return;
+                draggedItem.classList.remove('dragging');
+                document.querySelectorAll('.drag-placeholder').forEach(p => p.remove());
+                const newOrderIds = [...planList.querySelectorAll('[data-id]')].map(el => Number(el.dataset.id));
+                currentPlan.spots.sort((a,b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
+                updateMapMarkers(); draggedItem = null;
+            });
+            planList.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const afterElement = [...planList.querySelectorAll('[draggable="true"]:not(.dragging)')].reduce((closest, child) => {
+                    const box = child.getBoundingClientRect(); const offset = e.clientY - box.top - box.height / 2;
+                    return (offset < 0 && offset > closest.offset) ? { offset: offset, element: child } : closest;
+                }, { offset: Number.NEGATIVE_INFINITY }).element;
+                document.querySelectorAll('.drag-placeholder').forEach(p => p.remove());
+                const placeholder = document.createElement('div'); placeholder.className = 'drag-placeholder';
+                if (afterElement == null) planList.appendChild(placeholder); else planList.insertBefore(placeholder, afterElement);
+            });
+            planList.addEventListener('drop', (e) => {
+                e.preventDefault();
+                const placeholder = planList.querySelector('.drag-placeholder');
+                if (placeholder && draggedItem) {
+                    planList.insertBefore(draggedItem, placeholder);
+                }
+            });
+            
+            getEl('export-image-btn').addEventListener('click', handleExportImage);
+        };
+        init();
+    });
     </script>
-    <!-- The missing logic from the previous step would be here to make it a single runnable file -->
 </body>
 </html>
 
