@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>デートプランナー Ultimate</title>
+    <title>ランニングトラッカー</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,402 +11,331 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- HTML to Image library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" xintegrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoVBL5gI9kLmbG0CzdlIQHNi1HAXHg==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 
     <style>
         html, body { height: 100%; overflow: hidden; }
         body { font-family: 'Inter', 'Noto Sans JP', sans-serif; -webkit-tap-highlight-color: transparent; }
-        #map { height: 100%; width: 100%; }
-        .touch-action-none { touch-action: none; }
-        #plan-list::-webkit-scrollbar, #saved-plans-container::-webkit-scrollbar { width: 6px; }
-        #plan-list::-webkit-scrollbar-thumb, #saved-plans-container::-webkit-scrollbar-thumb { background-color: #d1d5db; border-radius: 10px; }
+        .bg-dark { background-color: #121212; }
+        .bg-card { background-color: #1e1e1e; }
+        .text-main { color: #e0e0e0; }
+        .text-sub { color: #a0a0a0; }
+        .leaflet-tile { filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%); }
         .modal.open .modal-content { transform: translateY(0); }
         .modal-content { transition: transform 0.3s ease-out; }
-        .fab { box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
-        .dragging { opacity: 0.5; transform: scale(1.02); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
-        .drag-placeholder { background-color: rgba(199, 210, 254, 0.4); border: 2px dashed #a5b4fc; height: 100px; border-radius: 0.75rem; }
-        
-        .image-export-container {
-            position: absolute; left: -9999px; top: 0; width: 800px;
-            padding: 40px; background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            font-family: 'Noto Sans JP', sans-serif;
-        }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 antialiased">
+<body class="bg-dark text-main antialiased">
 
-    <div id="app-container" class="h-full w-full max-w-lg mx-auto bg-white shadow-2xl flex flex-col">
+    <div id="app-container" class="h-full w-full max-w-lg mx-auto bg-dark shadow-2xl flex flex-col">
+        
         <!-- Header -->
-        <header class="p-4 bg-gradient-to-r from-sky-500 to-indigo-500 text-white flex-shrink-0 shadow-md z-10">
-            <div class="flex justify-between items-center">
-                <h1 class="text-xl font-bold flex items-center">
-                    <i data-lucide="sparkles" class="mr-2"></i>Ultimate Planner
-                </h1>
-                <div class="flex items-center space-x-1">
-                    <button id="export-image-btn" title="画像として保存" class="p-2 hover:bg-white/20 rounded-full transition-colors"><i data-lucide="camera" class="w-5 h-5"></i></button>
-                    <button id="my-plans-btn" title="プラン一覧" class="p-2 hover:bg-white/20 rounded-full transition-colors"><i data-lucide="folder-kanban" class="w-5 h-5"></i></button>
-                    <button id="save-plan-btn" title="現在のプランを保存" class="p-2 hover:bg-white/20 rounded-full transition-colors"><i data-lucide="save" class="w-5 h-5"></i></button>
-                    <button id="new-plan-btn" title="新規プラン作成" class="p-2 hover:bg-white/20 rounded-full transition-colors"><i data-lucide="file-plus-2" class="w-5 h-5"></i></button>
-                </div>
-            </div>
-            <input type="text" id="plan-title" placeholder="新しいデートプラン名..." class="w-full mt-3 p-2.5 bg-white/20 placeholder-white/70 rounded-lg text-lg font-semibold focus:bg-white focus:text-gray-800 focus:placeholder-gray-400 transition">
+        <header class="p-4 flex justify-between items-center flex-shrink-0 z-10">
+            <h1 class="text-xl font-bold flex items-center">
+                <i data-lucide="footprints" class="mr-2 text-cyan-400"></i>Run Tracker
+            </h1>
+            <button id="history-btn" class="p-2 rounded-full hover:bg-card transition-colors">
+                <i data-lucide="history" class="w-6 h-6"></i>
+            </button>
         </header>
 
-        <!-- Main Content -->
-        <main class="flex-grow overflow-hidden relative">
-            <div id="timeline-view" class="absolute inset-0 p-4 flex flex-col">
-                <div id="plan-list" class="overflow-y-auto flex-grow space-y-3 pr-2"></div>
-            </div>
-            <div id="map-view" class="absolute inset-0 hidden"><div id="map"></div></div>
-        </main>
-        
-        <button id="add-spot-btn" class="fab absolute bottom-24 right-6 bg-indigo-500 hover:bg-indigo-600 text-white rounded-full p-4 z-20 transition-transform transform hover:scale-110">
-            <i data-lucide="plus" class="w-6 h-6"></i>
-        </button>
-
-        <!-- Bottom Navigation -->
-        <nav class="flex-shrink-0 bg-white border-t border-gray-200 flex justify-around">
-            <button data-view="timeline-view" class="nav-btn flex-1 py-3 px-2 flex flex-col items-center text-indigo-500">
-                <i data-lucide="list-ordered" class="w-6 h-6 mb-1"></i><span class="text-xs font-medium">タイムライン</span>
-            </button>
-            <button data-view="map-view" class="nav-btn flex-1 py-3 px-2 flex flex-col items-center text-gray-400">
-                <i data-lucide="map" class="w-6 h-6 mb-1"></i><span class="text-xs font-medium">地図</span>
-            </button>
-        </nav>
-    </div>
-
-    <!-- Modals and Overlays -->
-    <div id="spot-modal" class="modal fixed inset-0 z-30 flex flex-col justify-end bg-black bg-opacity-50 hidden">
-        <div class="modal-content w-full max-w-lg mx-auto bg-gray-50 rounded-t-2xl p-5 transform translate-y-full touch-action-none flex flex-col max-h-[90vh]">
-            <div class="text-center mb-4 flex-shrink-0"><div class="inline-block w-10 h-1.5 bg-gray-300 rounded-full"></div></div>
-            <h3 id="modal-title" class="text-xl font-bold text-center mb-5 flex-shrink-0">新しいスポット</h3>
-            <form id="spot-form" class="flex-grow overflow-y-auto pr-2">
-                 <input type="hidden" id="spot-id">
-                 <div class="space-y-4">
-                     <div class="flex space-x-3">
-                         <div class="flex-1"><label for="spot-time" class="block text-sm font-medium text-gray-600 mb-1">時間</label><input type="time" id="spot-time" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg" required></div>
-                         <div class="flex-1"><label for="spot-category" class="block text-sm font-medium text-gray-600 mb-1">カテゴリ</label><select id="spot-category" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg"><option>🍽️ 食事</option><option>☕ カフェ</option><option>🎬 映画</option><option>🛍️ ショッピング</option><option>🌳 公園</option><option>🎨 美術館</option><option>🏰 観光</option><option>🎁 プレゼント</option><option>その他</option></select></div>
-                     </div>
-                     <div>
-                         <label for="spot-search" class="block text-sm font-medium text-gray-600 mb-1">場所を検索</label>
-                         <div class="flex"><input type="text" id="spot-search" placeholder="例: 東京タワー, 渋谷カフェ" class="w-full p-2.5 bg-white border border-gray-300 rounded-l-lg"><button type="button" id="search-location-btn" class="bg-blue-500 text-white px-4 rounded-r-lg hover:bg-blue-600 flex items-center"><i data-lucide="search" class="w-5 h-5"></i></button></div>
-                         <div id="search-results" class="mt-2 max-h-32 overflow-y-auto border rounded-lg bg-white"></div>
-                         <div class="mt-2 bg-blue-50 p-2 rounded-lg text-sm"><p id="selected-location-name" class="text-blue-800">場所を選択してください</p><input type="hidden" id="spot-name"><input type="hidden" id="spot-lat"><input type="hidden" id="spot-lon"></div>
-                     </div>
-                     <div><label for="spot-station" class="block text-sm font-medium text-gray-600 mb-1">最寄り駅 <span class="text-xs text-gray-400">(任意)</span></label><input type="text" id="spot-station" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg"></div>
-                     <div><label for="spot-memo" class="block text-sm font-medium text-gray-600 mb-1">メモ <span class="text-xs text-gray-400">(任意)</span></label><textarea id="spot-memo" rows="2" class="w-full p-2.5 bg-white border border-gray-300 rounded-lg"></textarea></div>
-                 </div>
-            </form>
-            <div class="mt-5 pt-4 border-t border-gray-200 flex space-x-3 flex-shrink-0">
-                <button type="button" id="cancel-btn" class="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg transition-colors">キャンセル</button>
-                <button type="submit" form="spot-form" id="save-spot-btn" class="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg transition-colors">保存</button>
+        <!-- Map View -->
+        <div id="map-container" class="flex-grow h-1/2 relative">
+            <div id="map" class="h-full w-full"></div>
+            <div id="permission-overlay" class="absolute inset-0 bg-black/70 flex-col items-center justify-center text-center p-4 hidden">
+                <i data-lucide="map-pin-off" class="w-16 h-16 text-red-500 mb-4"></i>
+                <h2 class="text-xl font-bold mb-2">位置情報が必要です</h2>
+                <p class="text-sub">このアプリを使用するには、位置情報へのアクセスを許可してください。</p>
             </div>
         </div>
-    </div>
-    <div id="plan-list-modal" class="modal fixed inset-0 z-40 bg-black bg-opacity-50 hidden">
-        <div class="absolute inset-0" id="plan-list-modal-backdrop"></div>
-        <div class="modal-content w-full max-w-lg mx-auto bg-gray-50 rounded-t-2xl p-5 transform translate-y-full flex flex-col max-h-[90vh]">
-            <h3 class="text-xl font-bold text-center mb-5 flex-shrink-0">プラン一覧</h3>
-            <div id="saved-plans-container" class="flex-grow overflow-y-auto space-y-3"></div>
+
+        <!-- Stats View -->
+        <div id="stats-container" class="p-4 grid grid-cols-2 gap-4 flex-shrink-0">
+            <div class="bg-card p-4 rounded-lg text-center">
+                <p class="text-sm text-sub">距離 (km)</p>
+                <p id="distance" class="text-3xl font-bold">0.00</p>
+            </div>
+            <div class="bg-card p-4 rounded-lg text-center">
+                <p class="text-sm text-sub">ペース (分/km)</p>
+                <p id="pace" class="text-3xl font-bold">--:--</p>
+            </div>
+            <div class="bg-card p-4 rounded-lg text-center">
+                <p class="text-sm text-sub">時間</p>
+                <p id="timer" class="text-3xl font-bold">00:00:00</p>
+            </div>
+            <div class="bg-card p-4 rounded-lg text-center">
+                <p class="text-sm text-sub">推定歩数</p>
+                <p id="steps" class="text-3xl font-bold">0</p>
+            </div>
         </div>
+
+        <!-- Controls -->
+        <div class="p-4 flex justify-around items-center flex-shrink-0">
+            <button id="start-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold rounded-full w-28 h-28 flex items-center justify-center text-2xl transition-all shadow-lg">
+                <i data-lucide="play" class="w-10 h-10"></i>
+            </button>
+            <button id="pause-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-full w-28 h-28 items-center justify-center text-2xl transition-all shadow-lg hidden">
+                <i data-lucide="pause" class="w-10 h-10"></i>
+            </button>
+            <button id="stop-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold rounded-full w-20 h-20 items-center justify-center text-xl transition-all shadow-md hidden">
+                <i data-lucide="square" class="w-8 h-8"></i>
+            </button>
+        </div>
+
     </div>
     
-    <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-gray-800 text-white py-2 px-5 rounded-full shadow-lg opacity-0 transform -translate-y-10 transition-all duration-300 z-50"></div>
-
-    <div id="loading-overlay" class="fixed inset-0 z-50 bg-black bg-opacity-60 flex items-center justify-center hidden">
-        <div class="bg-white text-gray-800 rounded-lg p-6 flex items-center shadow-xl">
-            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-            <span>画像生成中...</span>
+    <!-- History Modal -->
+    <div id="history-modal" class="modal fixed inset-0 z-30 flex flex-col justify-end bg-black bg-opacity-70 hidden">
+        <div class="modal-content w-full max-w-lg mx-auto bg-card rounded-t-2xl p-5 transform translate-y-full flex flex-col max-h-[80vh]">
+            <div class="text-center mb-4 flex-shrink-0"><div class="inline-block w-10 h-1.5 bg-gray-600 rounded-full"></div></div>
+            <h3 class="text-xl font-bold text-center mb-5 flex-shrink-0">ランニング履歴</h3>
+            <div id="history-list" class="flex-grow overflow-y-auto space-y-3">
+                <!-- History items will be injected here -->
+            </div>
+            <button id="close-history-btn" class="mt-4 w-full bg-cyan-500 text-white font-bold py-3 rounded-lg">閉じる</button>
         </div>
     </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
         const getEl = (id) => document.getElementById(id);
-        const categoryIcons = { '🍽️ 食事': 'utensils-crossed', '☕ カフェ': 'coffee', '🎬 映画': 'film', '🛍️ ショッピング': 'shopping-bag', '🌳 公園': 'leaf', '🎨 美術館': 'palette', '🏰 観光': 'castle', '🎁 プレゼント': 'gift', 'その他': 'more-horizontal' };
 
-        let allPlans = {};
-        let currentPlan = { id: null, title: '', spots: [] };
-        let map; let markers = {}; let draggedItem = null;
+        // --- DOM Elements ---
+        const distanceEl = getEl('distance');
+        const paceEl = getEl('pace');
+        const timerEl = getEl('timer');
+        const stepsEl = getEl('steps');
+        const startBtn = getEl('start-btn');
+        const pauseBtn = getEl('pause-btn');
+        const stopBtn = getEl('stop-btn');
+        const historyBtn = getEl('history-btn');
+        const historyModal = getEl('history-modal');
+        const closeHistoryBtn = getEl('close-history-btn');
+        const historyList = getEl('history-list');
 
-        const planTitleInput = getEl('plan-title');
-        const planList = getEl('plan-list');
-        const toast = getEl('toast');
-        const spotModal = getEl('spot-modal');
-        const planListModal = getEl('plan-list-modal');
+        // --- State ---
+        let map, polyline, userMarker;
+        let isRunning = false;
+        let isPaused = false;
+        let watchId = null;
+        let startTime = 0;
+        let pausedTime = 0;
+        let totalPausedTime = 0;
+        let timerInterval = null;
+        let totalDistance = 0; // in meters
+        let routeCoordinates = [];
+        let runHistory = [];
+        const AVERAGE_STRIDE_METERS = 0.762;
 
+        // --- Initialization ---
         const init = () => {
             lucide.createIcons();
             initMap();
-            loadAllPlans();
-            startNewPlan();
+            loadHistory();
             attachEventListeners();
         };
 
         const initMap = () => {
-            map = L.map('map').setView([35.681236, 139.767125], 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+            map = L.map('map').setView([35.681236, 139.767125], 16);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            
+            // Try to get current location to center map
+            navigator.geolocation.getCurrentPosition(
+                (position) => map.setView([position.coords.latitude, position.coords.longitude], 16),
+                handleLocationError
+            );
         };
         
-        const renderPlanList = () => {
-            planList.innerHTML = '';
-            if (currentPlan.spots.length === 0) {
-                planList.innerHTML = `<div class="text-center text-gray-400 p-8 mt-10"><i data-lucide="calendar-heart" class="w-20 h-20 mx-auto text-gray-300"></i><p class="mt-4">下の「+」ボタンから予定を追加しましょう！</p></div>`;
+        const loadHistory = () => {
+            runHistory = JSON.parse(localStorage.getItem('runHistory')) || [];
+        };
+
+        const saveHistory = () => {
+            localStorage.setItem('runHistory', JSON.stringify(runHistory));
+        };
+
+        // --- UI Functions ---
+        const updateTimer = () => {
+            if (!isRunning || isPaused) return;
+            const now = Date.now();
+            const elapsed = now - startTime - totalPausedTime;
+            const hours = Math.floor(elapsed / 3600000);
+            const minutes = Math.floor((elapsed % 3600000) / 60000);
+            const seconds = Math.floor((elapsed % 60000) / 1000);
+            timerEl.textContent = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        };
+        
+        const updateStats = () => {
+            const distanceKm = totalDistance / 1000;
+            distanceEl.textContent = distanceKm.toFixed(2);
+            
+            stepsEl.textContent = Math.round(totalDistance / AVERAGE_STRIDE_METERS);
+
+            const elapsedSeconds = (Date.now() - startTime - totalPausedTime) / 1000;
+            if (distanceKm > 0 && elapsedSeconds > 0) {
+                const paceSecondsPerKm = elapsedSeconds / distanceKm;
+                const paceMinutes = Math.floor(paceSecondsPerKm / 60);
+                const paceSeconds = Math.floor(paceSecondsPerKm % 60);
+                paceEl.textContent = `${String(paceMinutes).padStart(2, '0')}:${String(paceSeconds).padStart(2, '0')}`;
+            } else {
+                paceEl.textContent = '--:--';
+            }
+        };
+
+        const renderHistory = () => {
+            historyList.innerHTML = '';
+            if (runHistory.length === 0) {
+                historyList.innerHTML = `<div class="text-center text-sub p-8"><i data-lucide="archive-x" class="w-16 h-16 mx-auto"></i><p class="mt-4">まだ履歴はありません。</p></div>`;
                 lucide.createIcons(); return;
             }
-            currentPlan.spots.forEach((spot) => {
-                const iconName = categoryIcons[spot.category] || 'more-horizontal';
-                const spotEl = document.createElement('div');
-                spotEl.className = 'p-4 bg-white rounded-xl border border-gray-200 shadow-sm cursor-grab active:cursor-grabbing';
-                spotEl.dataset.id = spot.id; spotEl.draggable = true;
-                spotEl.innerHTML = `
-                    <div class="flex items-start">
-                        <div class="flex-shrink-0 w-12 text-center pt-1"><p class="text-xl font-bold text-indigo-500">${spot.time.split(':')[0]}</p><p class="text-md text-indigo-500 -mt-1">${spot.time.split(':')[1]}</p></div>
-                        <div class="ml-3 flex-grow border-l-2 border-indigo-200 pl-4">
-                            <div class="flex items-center text-sm text-gray-500"><i data-lucide="${iconName}" class="w-4 h-4 mr-2"></i><span>${spot.category.substring(3)}</span></div>
-                            <p class="font-semibold text-gray-800 text-lg">${spot.name}</p>
-                            <p class="text-xs text-gray-400 mt-1">${spot.station || ''}</p>
-                        </div>
-                        <div class="flex flex-col space-y-2"><button class="edit-btn p-1 text-gray-400 hover:text-blue-500" data-id="${spot.id}"><i data-lucide="edit" class="w-4 h-4 pointer-events-none"></i></button><button class="delete-btn p-1 text-gray-400 hover:text-red-500" data-id="${spot.id}"><i data-lucide="trash-2" class="w-4 h-4 pointer-events-none"></i></button></div>
-                    </div>`;
-                planList.appendChild(spotEl);
+            [...runHistory].reverse().forEach(run => {
+                const item = document.createElement('div');
+                item.className = 'bg-dark p-4 rounded-lg';
+                item.innerHTML = `
+                    <p class="font-bold">${new Date(run.date).toLocaleString('ja-JP')}</p>
+                    <div class="grid grid-cols-3 gap-2 mt-2 text-center">
+                        <div><p class="text-xs text-sub">距離</p><p>${run.distance.toFixed(2)} km</p></div>
+                        <div><p class="text-xs text-sub">時間</p><p>${run.time}</p></div>
+                        <div><p class="text-xs text-sub">ペース</p><p>${run.pace}</p></div>
+                    </div>
+                `;
+                historyList.appendChild(item);
             });
-            lucide.createIcons();
-            updateMapMarkers();
         };
         
-        const updateMapMarkers = () => {
-            Object.values(markers).forEach(marker => marker.remove()); markers = {}; const latLngs = [];
-            currentPlan.spots.forEach((spot, index) => {
-                if (spot.lat && spot.lon) {
-                    const latLng = [spot.lat, spot.lon]; latLngs.push(latLng);
-                    const icon = L.divIcon({ html: `<div class="bg-indigo-500 text-white w-7 h-7 rounded-full flex items-center justify-center font-bold text-md shadow-lg border-2 border-white">${index + 1}</div>`, className: '', iconSize: [28, 28], iconAnchor: [14, 14] });
-                    const marker = L.marker(latLng, { icon }).addTo(map).bindPopup(`<b>${index + 1}. ${spot.name}</b><br>${spot.time}`);
-                    markers[spot.id] = marker;
-                }
-            });
-            if (latLngs.length > 0) map.fitBounds(latLngs, { padding: [50, 50] });
-        };
+        // --- Run Logic ---
+        const startRun = () => {
+            if (isRunning) return;
+            resetState();
+            isRunning = true;
+            isPaused = false;
+            startTime = Date.now();
+            totalPausedTime = 0;
+            timerInterval = setInterval(updateTimer, 1000);
+            
+            startBtn.classList.add('hidden');
+            pauseBtn.classList.remove('hidden');
+            pauseBtn.style.display = 'flex';
+            stopBtn.classList.remove('hidden');
+            stopBtn.style.display = 'flex';
+            
+            polyline = L.polyline([], { color: '#06b6d4', weight: 5 }).addTo(map);
 
-        const renderPlanListModal = () => {
-            const container = getEl('saved-plans-container');
-            container.innerHTML = '';
-            const plans = Object.values(allPlans);
-            if (plans.length === 0) {
-                container.innerHTML = `<div class="text-center text-gray-400 p-8"><i data-lucide="folder-x" class="w-16 h-16 mx-auto text-gray-300"></i><p class="mt-4">保存されたプランはありません。</p></div>`;
-                lucide.createIcons(); return;
-            }
-            plans.forEach(plan => {
-                const planEl = document.createElement('div');
-                planEl.className = 'p-4 bg-white rounded-lg shadow-sm flex justify-between items-center';
-                planEl.innerHTML = `<span class="font-semibold">${plan.title}</span><div class="space-x-2"><button class="load-plan-btn bg-blue-500 text-white py-1 px-3 rounded text-sm" data-id="${plan.id}">読込</button><button class="delete-plan-btn bg-red-500 text-white py-1 px-3 rounded text-sm" data-id="${plan.id}">削除</button></div>`;
-                container.appendChild(planEl);
-            });
+            watchId = navigator.geolocation.watchPosition(
+                updatePosition,
+                handleLocationError,
+                { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
+            );
         };
-
-        const loadAllPlans = () => { allPlans = JSON.parse(localStorage.getItem('datePlannerAllPlans')) || {}; };
-        const saveAllPlans = () => { localStorage.setItem('datePlannerAllPlans', JSON.stringify(allPlans)); };
         
-        const saveCurrentPlan = () => {
-            currentPlan.title = planTitleInput.value.trim();
-            if (!currentPlan.title) { showToast("プラン名を入力してください"); return; }
-            if (!currentPlan.id) { currentPlan.id = Date.now(); }
-            allPlans[currentPlan.id] = { ...currentPlan };
-            saveAllPlans();
-            showToast("プランを保存しました");
-        };
-
-        const startNewPlan = () => {
-            currentPlan = { id: null, title: '', spots: [] };
-            planTitleInput.value = '';
-            renderPlanList();
-        };
-
-        const loadPlan = (planId) => {
-            currentPlan = JSON.parse(JSON.stringify(allPlans[planId])); // Deep copy
-            planTitleInput.value = currentPlan.title;
-            renderPlanList();
-            closeModal(planListModal);
-            showToast(`「${currentPlan.title}」を読み込みました`);
-        };
-
-        const deletePlan = (planId) => {
-            if (confirm(`「${allPlans[planId].title}」を本当に削除しますか？`)) {
-                if(currentPlan.id == planId) startNewPlan();
-                delete allPlans[planId];
-                saveAllPlans();
-                renderPlanListModal();
-                showToast("プランを削除しました");
+        const pauseRun = () => {
+            if (!isRunning) return;
+            if (isPaused) { // Resume
+                isPaused = false;
+                totalPausedTime += Date.now() - pausedTime;
+                pauseBtn.innerHTML = `<i data-lucide="pause" class="w-10 h-10"></i>`;
+                lucide.createIcons();
+            } else { // Pause
+                isPaused = true;
+                pausedTime = Date.now();
+                pauseBtn.innerHTML = `<i data-lucide="play" class="w-10 h-10"></i>`;
+                lucide.createIcons();
             }
         };
 
-        const showToast = (message) => { toast.textContent = message; toast.classList.remove('opacity-0', '-translate-y-10'); setTimeout(() => toast.classList.add('opacity-0', '-translate-y-10'), 2500); };
-        const openModal = (modal) => { modal.classList.remove('hidden'); requestAnimationFrame(() => modal.classList.add('open')); };
-        const closeModal = (modal) => { modal.classList.remove('open'); setTimeout(() => modal.classList.add('hidden'), 300); };
+        const stopRun = () => {
+            if (!isRunning) return;
+            
+            // Save final run data
+            const finalDistanceKm = totalDistance / 1000;
+            const finalTime = timerEl.textContent;
+            const finalPace = paceEl.textContent;
+            if (finalDistanceKm > 0.01) { // Only save meaningful runs
+                runHistory.push({
+                    date: new Date().toISOString(),
+                    distance: finalDistanceKm,
+                    time: finalTime,
+                    pace: finalPace
+                });
+                saveHistory();
+            }
+            
+            resetState(true);
+        };
 
-        const openSpotModal = (spot = null) => {
-            getEl('spot-form').reset(); getEl('search-results').innerHTML = '';
-            if (spot) {
-                getEl('modal-title').textContent = 'スポットを編集'; getEl('spot-id').value = spot.id; getEl('spot-time').value = spot.time; getEl('spot-category').value = spot.category; getEl('spot-name').value = spot.name; getEl('spot-lat').value = spot.lat; getEl('spot-lon').value = spot.lon; getEl('spot-station').value = spot.station; getEl('spot-memo').value = spot.memo; getEl('selected-location-name').textContent = spot.name;
+        const resetState = (isStopping = false) => {
+            isRunning = false; isPaused = false;
+            clearInterval(timerInterval);
+            if (watchId) navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+            
+            startBtn.classList.remove('hidden');
+            pauseBtn.classList.add('hidden');
+            stopBtn.classList.add('hidden');
+            
+            if (isStopping) {
+                totalDistance = 0;
+                routeCoordinates = [];
+                distanceEl.textContent = '0.00';
+                paceEl.textContent = '--:--';
+                timerEl.textContent = '00:00:00';
+                stepsEl.textContent = '0';
+                if(polyline) map.removeLayer(polyline);
+                if(userMarker) map.removeLayer(userMarker);
+                polyline = null; userMarker = null;
+            }
+        };
+
+        // --- Geolocation Handlers ---
+        const updatePosition = (position) => {
+            if(isPaused) return;
+            const { latitude, longitude } = position.coords;
+            const newCoord = [latitude, longitude];
+
+            map.setView(newCoord, 17);
+            
+            if (userMarker) {
+                userMarker.setLatLng(newCoord);
             } else {
-                getEl('modal-title').textContent = '新しいスポット'; getEl('spot-id').value = ''; getEl('selected-location-name').textContent = '場所を検索して選択してください';
+                userMarker = L.circle(newCoord, {
+                    color: '#67e8f9',
+                    fillColor: '#06b6d4',
+                    fillOpacity: 0.8,
+                    radius: 8
+                }).addTo(map);
             }
-            openModal(spotModal);
-        };
-        
-        const handleFormSubmit = (e) => {
-            e.preventDefault();
-            const id = getEl('spot-id').value;
-            const spotData = {
-                time: getEl('spot-time').value, category: getEl('spot-category').value, name: getEl('spot-name').value, lat: getEl('spot-lat').value, lon: getEl('spot-lon').value, station: getEl('spot-station').value, memo: getEl('spot-memo').value
-            };
-            if (!spotData.name || !spotData.lat) { showToast('場所を検索して選択してください'); return; }
-            if (id) {
-                const index = currentPlan.spots.findIndex(s => s.id == id); if (index > -1) currentPlan.spots[index] = { ...currentPlan.spots[index], ...spotData };
-            } else {
-                currentPlan.spots.push({ id: Date.now(), ...spotData });
+            
+            if (routeCoordinates.length > 0) {
+                const lastCoord = routeCoordinates[routeCoordinates.length - 1];
+                totalDistance += L.latLng(lastCoord).distanceTo(L.latLng(newCoord));
             }
-            currentPlan.spots.sort((a,b) => a.time.localeCompare(b.time));
-            renderPlanList(); closeModal(spotModal); showToast(id ? 'スポットを更新しました' : 'スポットを追加しました');
+
+            routeCoordinates.push(newCoord);
+            polyline.setLatLngs(routeCoordinates);
+            updateStats();
         };
 
-        const handleLocationSearch = async () => {
-            const query = getEl('spot-search').value; if (!query) return;
-            const resultsEl = getEl('search-results'); resultsEl.innerHTML = `<div class="p-2 text-center">検索中...</div>`;
-            try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&addressdetails=1`);
-                const data = await res.json(); resultsEl.innerHTML = '';
-                if (data && data.length > 0) {
-                    data.slice(0, 5).forEach(item => {
-                        const resultEl = document.createElement('div');
-                        resultEl.className = 'p-2 border-b cursor-pointer hover:bg-gray-100 text-sm';
-                        resultEl.textContent = item.display_name;
-                        resultEl.onclick = () => {
-                            getEl('spot-name').value = item.display_name.split(',')[0]; getEl('spot-lat').value = item.lat; getEl('spot-lon').value = item.lon;
-                            getEl('selected-location-name').textContent = item.display_name; resultsEl.innerHTML = '';
-                        };
-                        resultsEl.appendChild(resultEl);
-                    });
-                } else resultsEl.innerHTML = `<div class="p-2 text-center text-gray-500">見つかりませんでした</div>`;
-            } catch (error) { resultsEl.innerHTML = `<div class="p-2 text-center text-red-500">検索エラー</div>`; }
+        const handleLocationError = (error) => {
+            console.error(error);
+            getEl('permission-overlay').style.display = 'flex';
         };
 
-        const handleExportImage = async () => {
-            if (!currentPlan.title || currentPlan.spots.length === 0) {
-                showToast("画像として保存できるプランがありません"); return;
-            }
-            const loadingOverlay = getEl('loading-overlay');
-            loadingOverlay.classList.remove('hidden');
-            const tempContainer = document.createElement('div');
-            tempContainer.className = 'image-export-container';
-            const today = new Date();
-            const dateString = `${today.getFullYear()}/${String(today.getMonth() + 1).padStart(2, '0')}/${String(today.getDate()).padStart(2, '0')}`;
-            let content = `
-                <div style="text-align: center; border-bottom: 2px solid #e0e0e0; padding-bottom: 20px; margin-bottom: 20px;">
-                    <h1 style="font-size: 42px; font-weight: 700; color: #333; margin: 0;">${currentPlan.title}</h1>
-                    <p style="font-size: 20px; color: #666; margin-top: 8px;">${dateString}</p>
-                </div>
-                <div style="display: grid; grid-template-columns: 1fr; gap: 20px;">`;
-            currentPlan.spots.forEach(spot => {
-                const iconSvg = lucide.icons[categoryIcons[spot.category] || 'more-horizontal'].toSvg({ width: 24, height: 24, color: '#4f46e5' });
-                content += `
-                    <div style="background-color: white; border-radius: 12px; padding: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); display: flex; align-items: flex-start;">
-                        <div style="flex-shrink: 0; width: 60px; text-align: center;">
-                            <p style="font-size: 24px; font-weight: 700; color: #4f46e5;">${spot.time.split(':')[0]}</p>
-                            <p style="font-size: 18px; color: #4f46e5; margin-top: -4px;">${spot.time.split(':')[1]}</p>
-                        </div>
-                        <div style="border-left: 2px solid #e5e7eb; padding-left: 20px; margin-left: 20px; flex-grow: 1;">
-                            <div style="display: flex; align-items: center; font-size: 18px; color: #555;">${iconSvg}<span style="margin-left: 10px;">${spot.category.substring(3)}</span></div>
-                            <p style="font-size: 26px; font-weight: 600; color: #111; margin: 8px 0;">${spot.name}</p>
-                            ${spot.station ? `<p style="font-size: 16px; color: #666; margin-top: 8px;">📍 最寄り駅: ${spot.station}</p>` : ''}
-                            ${spot.memo ? `<p style="font-size: 16px; color: #666; margin-top: 4px;">📝 メモ: ${spot.memo}</p>` : ''}
-                        </div>
-                    </div>`;
-            });
-            content += `</div>`;
-            tempContainer.innerHTML = content;
-            document.body.appendChild(tempContainer);
-            try {
-                const canvas = await html2canvas(tempContainer, { scale: 2, useCORS: true, backgroundColor: null });
-                const link = document.createElement('a');
-                link.download = `${currentPlan.title.replace(/ /g, '_')}_plan.png`;
-                link.href = canvas.toDataURL("image/png");
-                link.click();
-                showToast("画像を保存しました！");
-            } catch (err) { console.error("Image generation failed:", err); showToast("画像の保存に失敗しました");
-            } finally { loadingOverlay.classList.add('hidden'); document.body.removeChild(tempContainer); }
-        };
-
+        // --- Event Listeners ---
         const attachEventListeners = () => {
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.addEventListener('click', (e) => {
-                const targetView = e.currentTarget.dataset.view;
-                document.querySelectorAll('.nav-btn').forEach(b => b.classList.replace('text-indigo-500', 'text-gray-400'));
-                e.currentTarget.classList.replace('text-gray-400', 'text-indigo-500');
-                ['timeline-view', 'map-view'].forEach(id => getEl(id).classList.add('hidden'));
-                getEl(targetView).classList.remove('hidden');
-                if (targetView === 'map-view') setTimeout(() => map.invalidateSize(), 1);
-            }));
-            
-            getEl('add-spot-btn').addEventListener('click', () => openSpotModal());
-            getEl('cancel-btn').addEventListener('click', () => closeModal(spotModal));
-            spotModal.addEventListener('click', (e) => e.target === spotModal && closeModal(spotModal));
-            getEl('spot-form').addEventListener('submit', handleFormSubmit);
+            startBtn.addEventListener('click', startRun);
+            pauseBtn.addEventListener('click', pauseRun);
+            stopBtn.addEventListener('click', () => { if(confirm('ランニングを終了しますか？')) stopRun(); });
 
-            getEl('my-plans-btn').addEventListener('click', () => { renderPlanListModal(); openModal(planListModal); });
-            getEl('plan-list-modal-backdrop').addEventListener('click', () => closeModal(planListModal));
-            getEl('saved-plans-container').addEventListener('click', (e) => {
-                if (e.target.classList.contains('load-plan-btn')) loadPlan(e.target.dataset.id);
-                if (e.target.classList.contains('delete-plan-btn')) deletePlan(e.target.dataset.id);
+            historyBtn.addEventListener('click', () => {
+                renderHistory();
+                historyModal.classList.remove('hidden');
+                requestAnimationFrame(() => historyModal.classList.add('open'));
             });
-
-            getEl('save-plan-btn').addEventListener('click', saveCurrentPlan);
-            getEl('new-plan-btn').addEventListener('click', () => { 
-                if (currentPlan.spots.length > 0 && !allPlans[currentPlan.id]) {
-                    if (confirm('現在のプランは保存されていません。破棄して新規作成しますか？')) startNewPlan();
-                } else {
-                    startNewPlan();
-                }
+            closeHistoryBtn.addEventListener('click', () => {
+                historyModal.classList.remove('open');
+                setTimeout(() => historyModal.classList.add('hidden'), 300);
             });
-            
-            getEl('search-location-btn').addEventListener('click', handleLocationSearch);
-            getEl('spot-search').addEventListener('keydown', (e) => e.key === 'Enter' && (e.preventDefault(), handleLocationSearch()));
-
-            planList.addEventListener('click', (e) => {
-                const editBtn = e.target.closest('.edit-btn'); const deleteBtn = e.target.closest('.delete-btn');
-                if(editBtn) { const spot = currentPlan.spots.find(s => s.id == editBtn.dataset.id); if(spot) openSpotModal(spot); }
-                if(deleteBtn) { if(confirm('このスポットを削除しますか？')) { currentPlan.spots = currentPlan.spots.filter(s => s.id != deleteBtn.dataset.id); renderPlanList(); showToast('スポットを削除しました'); } }
-            });
-
-            planList.addEventListener('dragstart', (e) => { draggedItem = e.target; setTimeout(() => e.target.classList.add('dragging'), 0); });
-            planList.addEventListener('dragend', (e) => {
-                if (!draggedItem) return;
-                draggedItem.classList.remove('dragging');
-                document.querySelectorAll('.drag-placeholder').forEach(p => p.remove());
-                const newOrderIds = [...planList.querySelectorAll('[data-id]')].map(el => Number(el.dataset.id));
-                currentPlan.spots.sort((a,b) => newOrderIds.indexOf(a.id) - newOrderIds.indexOf(b.id));
-                updateMapMarkers(); draggedItem = null;
-            });
-            planList.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                const afterElement = [...planList.querySelectorAll('[draggable="true"]:not(.dragging)')].reduce((closest, child) => {
-                    const box = child.getBoundingClientRect(); const offset = e.clientY - box.top - box.height / 2;
-                    return (offset < 0 && offset > closest.offset) ? { offset: offset, element: child } : closest;
-                }, { offset: Number.NEGATIVE_INFINITY }).element;
-                document.querySelectorAll('.drag-placeholder').forEach(p => p.remove());
-                const placeholder = document.createElement('div'); placeholder.className = 'drag-placeholder';
-                if (afterElement == null) planList.appendChild(placeholder); else planList.insertBefore(placeholder, afterElement);
-            });
-            planList.addEventListener('drop', (e) => {
-                e.preventDefault();
-                const placeholder = planList.querySelector('.drag-placeholder');
-                if (placeholder && draggedItem) {
-                    planList.insertBefore(draggedItem, placeholder);
-                }
-            });
-            
-            getEl('export-image-btn').addEventListener('click', handleExportImage);
         };
+        
         init();
     });
     </script>
