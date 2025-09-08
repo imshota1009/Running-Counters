@@ -10,6 +10,8 @@
   <i>「いつものお散歩が、ねことの楽しい冒険に変わる！」</i>
 </p>
 
+ここから遊べます⇒https://imshota1009.github.io/Running-Counters/
+
 ---
 
 ## ✨ 主な機能 (Features)
