@@ -3,7 +3,6 @@
 # 🐾 にゃん歩計 🐾  
 **ねことお散歩ランニングカウンター**
 
-<img src="images/nyanpometer_screenshot.jpg" alt="にゃん歩計アプリのスクリーンショット">
 
 </div>
 
