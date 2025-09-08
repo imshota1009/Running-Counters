@@ -1,76 +1,66 @@
-# にゃん歩計 🐾  
-ねことお散歩ランニングカウンター
+<div align="center">
 
-いつものお散歩が、ねことの楽しい冒険に変わる！  
-**「にゃん歩計」** は、可愛らしいねこをテーマにした、ウェブブラウザだけで動作するシンプルなランニング＆ウォーキングカウンターアプリです。  
+# 🐾 にゃん歩計 🐾  
+**ねことお散歩ランニングカウンター**
 
-サーバーや特別なインストールは一切不要。スマートフォンひとつで、すぐにあなただけのトレーニングを開始できます。  
+<img src="images/nyanpometer_screenshot.jpg" alt="にゃん歩計アプリのスクリーンショット">
 
-ここから遊べます⇒https://imshota1009.github.io/Running-Counters/
+</div>
+
+<p align="center">
+  <i>「いつものお散歩が、ねことの楽しい冒険に変わる！」</i>
+</p>
 
 ---
 
-## ✨ 主な機能
+## ✨ 主な機能 (Features)
 
 - 🐾 **心ときめくデザイン**  
-  クリーム色とオレンジを基調とした、温かみのあるUI。見ているだけで癒やされます。  
+  クリーム色とオレンジを基調にした、温かみのあるUI。  
 
 - 🏃 **リアルタイムトラッキング**  
-  GPSを利用して、距離・ペース・時間、そしてオリジナルの「にゃん歩（推定歩数）」をリアルタイムで計測。  
+  GPSで距離・ペース・時間、オリジナルの「にゃん歩（推定歩数）」を計測。  
 
 - 🗺️ **ねこと一緒に軌跡を記録**  
-  現在地は可愛いねこアイコンで表示。走ったり歩いたりした軌跡が地図上に足跡として描かれます。  
+  現在地はねこアイコンで表示。移動ルートが足跡として地図に描かれます。  
 
 - 😻 **かわいい肉球ボタン**  
-  操作ボタンはぷにっとした肉球がモチーフ。押すと楽しいアニメーション付き。  
+  押すとアニメーション付きのぷにぷに肉球ボタン。  
 
 - 📔 **思い出のおさんぽ履歴**  
-  過去のランニング記録を自動保存。その日の頑張りをねこがユニークなコメントで褒めてくれます。  
+  過去の記録を自動保存。ねこがコメントで褒めてくれます。  
 
-- 📁 **シングルファイル構成**  
-  `index.html` たった一つで全ての機能が完結。セットアップが超簡単です。  
+- 📁 **シンプル構成**  
+  `index.html` ひとつで完結。セットアップ不要。  
 
 ---
 
-## 🚀 使い方
+## 🚀 使い方 (Getting Started)
 
 1. **ダウンロード**  
-   このリポジトリから `index.html` ファイルをダウンロードします。  
+   このリポジトリから `index.html` を取得。  
 
 2. **ブラウザで開く**  
-   ダウンロードした `index.html` をスマートフォンのブラウザ（Safari, Chromeなど）で開きます。  
+   スマートフォンのブラウザで `index.html` を開きます。  
 
 3. **位置情報を許可**  
-   利用開始時にブラウザから位置情報の許可を求められたら「許可」を選択してください。  
+   初回起動時に位置情報アクセスを「許可」。  
 
 4. **スタート！**  
-   中央の大きな肉球ボタンを押して、ねことのお散歩に出かけましょう！  
+   中央の肉球ボタンを押してお散歩開始。  
 
 ---
 
-## 🛠️ 使用技術
+## 🛠️ 使用技術 (Technologies Used)
 
-- HTML5  
-- CSS3（Tailwind CSS）  
-- JavaScript (ES6+)  
-- Leaflet.js（地図表示 & GPS軌跡の描画）  
-- Google Fonts（M PLUS Rounded 1c）  
-
----
-
-## ⚠️ 注意事項
-
-- **GPSの精度**  
-  計測結果はデバイスのGPS性能や電波状況に左右されます（屋内・高層ビル街など）。  
-
-- **歩数について**  
-  「にゃん歩」はGPS距離から平均歩幅を元に算出した推定値です。実際の歩数とは誤差が生じます。  
-
-- **データ保存**  
-  ランニング履歴はブラウザの`localStorage`に保存されます。キャッシュや履歴削除でデータも消えます。  
-
-- **バッテリー消費**  
-  GPSを継続利用するため、通常よりバッテリーを消費します。  
+<p align="center">
+  <img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white">
+  <img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white">
+  <img src="https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white">
+  <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black">
+  <img src="https://img.shields.io/badge/Leaflet.js-199900?style=for-the-badge&logo=leaflet&logoColor=white">
+</p>
 
 ---
 
+#
