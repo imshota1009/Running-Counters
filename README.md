@@ -10,7 +10,7 @@
   <i>「いつものお散歩が、ねことの楽しい冒険に変わる！」</i>
 </p>
 
-ここから遊べます⇒https://imshota1009.github.io/Running-Counters/
+👉 [ここから]([https://imshota1009.github.io/Minecraft-Player-Info-Viewer/](https://imshota1009.github.io/Running-Counters/))  
 
 ---
 
