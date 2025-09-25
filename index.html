@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>にゃん歩計</title>
+    <title>にゃんぽ de みまもり</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,112 +12,427 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
     <style>
-        html, body { height: 100%; overflow: hidden; }
+        html, body { height: 100vh; width: 100vw; overflow: hidden; }
         body { font-family: 'M PLUS Rounded 1c', sans-serif; -webkit-tap-highlight-color: transparent; }
-        .paw-button { transition: transform 0.1s ease-out, box-shadow 0.2s ease; box-shadow: 0 6px 0px 0px #E57E5F; }
-        .paw-button:active { transform: translateY(4px) scale(0.98); box-shadow: 0 2px 0px 0px #E57E5F; }
-        .modal.open .modal-content { transform: translateY(0); }
-        .modal-content { transition: transform 0.3s ease-out; }
+        .paw-button { transition: transform 0.1s ease-out, box-shadow 0.2s ease; box-shadow: 0 8px 0px 0px #D97706; }
+        .paw-button:active { transform: translateY(6px) scale(0.98); box-shadow: 0 2px 0px 0px #D97706; }
+        .modal.open .modal-overlay { opacity: 1; }
+        .modal.open .modal-content { transform: translateY(0) scale(1); opacity: 1; }
+        .modal-overlay { transition: opacity 0.3s ease-out; }
+        .modal-content { transition: transform 0.3s ease-out, opacity 0.3s ease-out; }
         .leaflet-container { border-radius: 1.5rem; }
+        .progress-bar-inner { transition: width 0.5s ease-out; }
+        /* スクロールバーのデザイン */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #FFFAF0; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #FDBA74; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #FB923C; }
+        .achievement-badge.locked { filter: grayscale(1); opacity: 0.5; }
     </style>
 </head>
 <body class="bg-amber-50 text-orange-900 antialiased">
 
+    <!-- メインアプリケーションコンテナ -->
     <div id="app-container" class="h-full w-full max-w-lg mx-auto bg-amber-50 flex flex-col">
         
-        <!-- Header -->
+        <!-- ヘッダー -->
         <header class="p-4 flex justify-between items-center flex-shrink-0 z-10 relative">
-            <!-- Cat ears decoration -->
-            <div class="absolute top-0 left-1/2 -translate-x-1/2 w-48 h-8">
-                <div class="absolute -top-2 left-0 w-8 h-8 bg-amber-50 transform -rotate-45" style="border-top-left-radius: 10px;"></div>
-                <div class="absolute -top-2 right-0 w-8 h-8 bg-amber-50 transform rotate-45" style="border-top-right-radius: 10px;"></div>
-            </div>
             <h1 class="text-2xl font-extrabold flex items-center text-orange-800">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M17.8 12.5c0-2.3 1.3-4.2 3.2-4.2"/><path d="M2 14.9c0-2.3 1.3-4.2 3.2-4.2"/><path d="M12 20.3c2.8 0 5-2.2 5-5v-3.8c0-1.4-1.3-2.5-2.8-2.5-1.9 0-3.2 1.3-3.2 2.8V5.2c0-1.4-1.3-2.5-2.8-2.5-1.9 0-3.2 1.3-3.2 2.8v1.3c0 2.8 2.2 5 5 5z"/></svg>
-                にゃん歩計
+                <span data-translate-key="appTitle">にゃんぽ de みまもり</span>
             </h1>
-            <button id="history-btn" class="p-2 rounded-full hover:bg-orange-100 transition-colors">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 12v-2"/><path d="M14.5 13.12a5 5 0 1 0-5 0"/><path d="m15 14-1 4"/><path d="m9 14 1 4"/><path d="m12 16 2 2.5"/><path d="m12 16-2 2.5"/></svg>
-            </button>
+            <div class="flex items-center gap-4">
+                 <div class="flex items-center">
+                    <span class="text-sm font-bold text-gray-500">EN</span>
+                    <label for="language-toggle" class="relative inline-flex items-center cursor-pointer mx-2">
+                        <input type="checkbox" id="language-toggle" class="sr-only peer">
+                        <div class="w-11 h-6 bg-gray-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-500"></div>
+                    </label>
+                    <span class="text-sm font-bold text-orange-800">JA</span>
+                </div>
+                <button id="history-btn" class="p-2 rounded-xl bg-white/70 shadow-sm hover:bg-orange-100 transition-all active:scale-95">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-orange-800"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                </button>
+            </div>
         </header>
 
-        <!-- Map View -->
-        <div id="map-container" class="flex-grow h-1/2 relative p-4">
-            <div id="map" class="h-full w-full shadow-lg"></div>
-            <div id="permission-overlay" class="absolute inset-0 bg-black/70 flex-col items-center justify-center text-center p-4 hidden rounded-3xl">
-                <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-4"><path d="M20.25 7.75l-10-5-10 5v10l10 5 10-5v-10z"/><path d="M10.25 2.75L.25 7.75"/><path d="M10.25 12.75v10"/><path d="M3.75 9.25l16.5 8.5"/><path d="M20.25 17.75L10.25 22.75l-10-5"/><path d="M10.25 12.75L.25 7.75l10-5 10 5-10 5z"/><path d="m22.25 6.75-2-1"/><path d="M12.25 1.75l-2-1"/></svg>
-                <h2 class="text-xl font-bold mb-2 text-white">位置情報が必要だにゃ</h2>
-                <p class="text-gray-300">このアプリを使うには、位置情報を許可してほしいにゃ。</p>
+        <!-- メインコンテンツ (スクロール可能) -->
+        <main class="flex-grow overflow-y-auto custom-scrollbar pb-24">
+            <div class="p-4 pt-0 space-y-4">
+                <!-- ダッシュボード: 今日の目標 -->
+                <section class="bg-white p-4 rounded-2xl shadow-lg">
+                    <h2 class="font-bold text-orange-800 flex items-center mb-3 tracking-wide">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="m15.5 9.5-3 3-1.5-1.5"/></svg>
+                        <span data-translate-key="goalTitle">今日の目標</span>
+                    </h2>
+                    <div class="flex items-center gap-4">
+                        <div class="relative">
+                            <svg class="w-20 h-20 transform -rotate-90"><circle cx="40" cy="40" r="34" stroke="currentColor" stroke-width="8" class="text-orange-100" fill="transparent" /><circle id="goal-progress-circle" cx="40" cy="40" r="34" stroke="currentColor" stroke-width="8" class="text-amber-500" fill="transparent" stroke-dasharray="214" stroke-dashoffset="214" /></svg>
+                            <div id="goal-percentage" class="absolute inset-0 flex items-center justify-center text-lg font-bold text-amber-600">0%</div>
+                        </div>
+                        <div>
+                            <p class="text-sm text-orange-500" data-translate-key="estimatedSteps">推定にゃん歩</p>
+                            <p class="text-3xl font-bold"><span id="steps-today">0</span> / <span class="text-lg">5000</span></p>
+                            <p id="goal-message" class="text-xs text-orange-500 mt-1" data-translate-key="goalMessageDefault">まずはお散歩を始めようにゃ！</p>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 称号 & アチーブメント -->
+                <section class="bg-white p-4 rounded-2xl shadow-lg">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h2 class="font-bold text-orange-800 flex items-center tracking-wide">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M15.4 8.4a3 3 0 0 0-4.8 0"/><path d="M12 14.6V22"/><path d="m8.5 22 7-7"/><path d="M12 2.1 7.2 7a5 5 0 0 0-2 4.1v.4a2.5 2.5 0 0 0 2.5 2.5h8.6a2.5 2.5 0 0 0 2.5-2.5v-.4a5 5 0 0 0-2-4.1L12 2.1z"/></svg>
+                                <span data-translate-key="titleAndAchievements">称号 & アチーブメント</span>
+                            </h2>
+                            <p class="text-amber-600 font-bold text-lg mt-1" id="user-title">おさんぽ見習い</p>
+                        </div>
+                        <button id="achievement-btn" class="text-sm bg-orange-100 text-orange-700 font-bold py-1 px-3 rounded-full" data-translate-key="viewList">一覧</button>
+                    </div>
+                </section>
+                
+                 <!-- 保護猫支援 -->
+                <section class="bg-white p-4 rounded-2xl shadow-lg">
+                     <h2 class="font-bold text-orange-800 flex items-center mb-3 tracking-wide">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.77-.77-.77a5.4 5.4 0 0 0-7.65 0C2.46 6.5 2 8.6 2 12s.46 5.5 1.58 7.42A5.4 5.4 0 0 0 12 22a5.4 5.4 0 0 0 8.42-7.58c1.12-1.92 1.58-4.02 1.58-6.42s-.46-5.5-1.58-7.42z"/><path d="M12 12h.01"/></svg>
+                        <span data-translate-key="catSupport">保護猫支援</span>
+                    </h2>
+                    <div class="bg-orange-50 p-3 rounded-lg flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-orange-600" data-translate-key="totalDonatedPoints">総寄付ポイント</p>
+                            <p class="font-bold text-2xl" id="total-donated-points">0 pt</p>
+                        </div>
+                        <button id="donate-btn" class="bg-amber-500 text-white font-bold py-2 px-4 rounded-lg shadow-[0_4px_0_0_#B45309] active:translate-y-0.5 active:shadow-[0_2px_0_0_#B45309] transition-all" data-translate-key="donatePoints">
+                            ポイントを寄付
+                        </button>
+                    </div>
+                </section>
+
+
+                <!-- デイリーミッション -->
+                <section class="bg-white p-4 rounded-2xl shadow-lg">
+                    <h2 class="font-bold text-orange-800 flex items-center mb-3 tracking-wide">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mr-2"><path d="M12 1.67a2.82 2.82 0 0 0-2 5V10H8a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h1.33a2.82 2.82 0 0 0 5.34 0H16a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1h-2V6.67a2.82 2.82 0 0 0-2-5z"/><path d="M12 15v5.33"/><path d="M15 22H9"/></svg>
+                        <span data-translate-key="dailyMissions">デイリーミッション</span>
+                    </h2>
+                    <div class="space-y-2">
+                        <div id="mission1" class="flex items-center bg-orange-50 p-2 rounded-lg"><div class="w-5 h-5 rounded-full border-2 border-orange-300 mr-3"></div><p><span data-translate-key="mission1Text">1000歩あるくにゃ！</span> (0/1000)</p></div>
+                        <div id="mission2" class="flex items-center bg-orange-50 p-2 rounded-lg"><div class="w-5 h-5 rounded-full border-2 border-orange-300 mr-3"></div><p data-translate-key="mission2Text">みまもりスポットに1回チェックイン！</p></div>
+                    </div>
+                </section>
+                
+                <!-- マップビュー -->
+                <section id="map-container" class="h-64 relative">
+                    <div id="map" class="h-full w-full shadow-lg"></div>
+                    <div id="permission-overlay" class="absolute inset-0 bg-black/70 flex-col items-center justify-center text-center p-4 hidden rounded-3xl z-10">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mb-4"><path d="M20.25 7.75l-10-5-10 5v10l10 5 10-5v-10z"/><path d="M10.25 2.75L.25 7.75"/><path d="M10.25 12.75v10"/><path d="M3.75 9.25l16.5 8.5"/><path d="M20.25 17.75L10.25 22.75l-10-5"/><path d="M10.25 12.75L.25 7.75l10-5 10 5-10 5z"/><path d="m22.25 6.75-2-1"/><path d="M12.25 1.75l-2-1"/></svg>
+                        <h2 class="text-xl font-bold mb-2 text-white" data-translate-key="locationNeeded">位置情報が必要だにゃ</h2>
+                        <p class="text-gray-300" data-translate-key="locationMessage">このアプリを使うには、位置情報を許可してほしいにゃ。</p>
+                    </div>
+                </section>
+
+                <!-- 計測データ -->
+                <section id="stats-container" class="grid grid-cols-2 gap-4">
+                    <div class="bg-white p-4 rounded-2xl text-center shadow-lg"><p class="text-sm text-orange-500 font-medium" data-translate-key="distance">距離 (km)</p><p id="distance" class="text-3xl font-bold mt-1">0.00</p></div>
+                    <div class="bg-white p-4 rounded-2xl text-center shadow-lg"><p class="text-sm text-orange-500 font-medium" data-translate-key="pace">ペース (分/km)</p><p id="pace" class="text-3xl font-bold mt-1">--:--</p></div>
+                    <div class="bg-white p-4 rounded-2xl text-center shadow-lg"><p class="text-sm text-orange-500 font-medium" data-translate-key="time">時間</p><p id="timer" class="text-3xl font-bold mt-1">00:00:00</p></div>
+                    <div class="bg-white p-4 rounded-2xl text-center shadow-lg"><p class="text-sm text-orange-500 font-medium" data-translate-key="currentPoints">今回のポイント</p><p id="points" class="text-3xl font-bold mt-1">0</p></div>
+                </section>
             </div>
-        </div>
-
-        <!-- Stats View -->
-        <div id="stats-container" class="p-4 grid grid-cols-2 gap-4 flex-shrink-0">
-            <div class="bg-white p-4 rounded-2xl text-center shadow"><p class="text-sm text-orange-500 font-medium">距離 (km)</p><p id="distance" class="text-3xl font-bold mt-1">0.00</p></div>
-            <div class="bg-white p-4 rounded-2xl text-center shadow"><p class="text-sm text-orange-500 font-medium">ペース (分/km)</p><p id="pace" class="text-3xl font-bold mt-1">--:--</p></div>
-            <div class="bg-white p-4 rounded-2xl text-center shadow"><p class="text-sm text-orange-500 font-medium">時間</p><p id="timer" class="text-3xl font-bold mt-1">00:00:00</p></div>
-            <div class="bg-white p-4 rounded-2xl text-center shadow"><p class="text-sm text-orange-500 font-medium">推定にゃん歩</p><p id="steps" class="text-3xl font-bold mt-1">0</p></div>
-        </div>
-
-        <!-- Controls -->
-        <div class="p-4 flex justify-around items-center flex-shrink-0">
-            <button id="stop-btn" class="bg-rose-400 hover:bg-rose-500 text-white font-bold rounded-full w-20 h-20 items-center justify-center text-xl transition-colors shadow-md hidden">
-                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
-            </button>
-            <button id="start-btn" class="paw-button bg-rose-400 text-white font-bold rounded-full w-28 h-28 flex items-center justify-center text-2xl transition-all">
-                 <svg id="start-pause-icon" xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="#ffffff" stroke="#f4a285" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12.9 19.3c1-.8 1.4-2 1-3.3s-1.4-2.2-2.5-2.5c-2.3-.5-4.6-2.9-4.8-5.3-.2-2.8 2.2-5.2 5-5.2 2.1 0 3.9 1.3 4.6 3.2"/><path d="M18 8.8c.3.8.4 1.6.4 2.4 0 2.8-2.2 5-5 5-1.6 0-3-1-3.8-2.2"/><path d="M20.8 13.9c.2-1.6-.3-3.2-1.5-4.4-1.3-1.4-3-2.1-4.8-2.1-3.6 0-6.5 2.9-6.5 6.5 0 2.4 1.3 4.5 3.2 5.6"/><path d="M2.5 17.5c2.4.9 5.2.4 7.2-1.3"/></svg>
-            </button>
-        </div>
+        </main>
+        
+        <!-- コントロールバー -->
+        <footer class="absolute bottom-0 left-0 right-0 w-full max-w-lg mx-auto p-4 bg-amber-50/80 backdrop-blur-sm z-20">
+            <div class="flex justify-center items-center gap-x-6">
+                <button id="stop-btn" class="bg-red-500 hover:bg-red-600 text-white font-bold rounded-full w-20 h-20 flex items-center justify-center text-xl transition-all shadow-[0_5px_0_0_#B91C1C] active:translate-y-1 active:shadow-[0_2px_0_0_#B91C1C] hidden">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>
+                </button>
+                <button id="start-btn" class="paw-button bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-full w-28 h-28 flex items-center justify-center text-2xl transition-all">
+                     <svg id="start-pause-icon" xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="#ffffff" stroke="#f4a285" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12.9 19.3c1-.8 1.4-2 1-3.3s-1.4-2.2-2.5-2.5c-2.3-.5-4.6-2.9-4.8-5.3-.2-2.8 2.2-5.2 5-5.2 2.1 0 3.9 1.3 4.6 3.2"/><path d="M18 8.8c.3.8.4 1.6.4 2.4 0 2.8-2.2 5-5 5-1.6 0-3-1-3.8-2.2"/><path d="M20.8 13.9c.2-1.6-.3-3.2-1.5-4.4-1.3-1.4-3-2.1-4.8-2.1-3.6 0-6.5 2.9-6.5 6.5 0 2.4 1.3 4.5 3.2 5.6"/><path d="M2.5 17.5c2.4.9 5.2.4 7.2-1.3"/></svg>
+                </button>
+            </div>
+        </footer>
     </div>
     
-    <!-- History Modal -->
-    <div id="history-modal" class="modal fixed inset-0 z-30 flex flex-col justify-end bg-black bg-opacity-70 hidden">
-        <div class="modal-content w-full max-w-lg mx-auto bg-orange-100 rounded-t-2xl p-5 transform translate-y-full flex flex-col max-h-[80vh]">
+    <!-- 履歴モーダル -->
+    <div id="history-modal" class="modal fixed inset-0 z-30 flex-col justify-end hidden">
+        <div class="modal-overlay absolute inset-0 bg-black bg-opacity-70 opacity-0" onclick="closeHistoryModal()"></div>
+        <div class="modal-content w-full max-w-lg mx-auto bg-orange-100 rounded-t-3xl p-5 transform translate-y-full opacity-0 flex flex-col max-h-[85vh]">
             <div class="text-center mb-4 flex-shrink-0"><div class="inline-block w-10 h-1.5 bg-orange-200 rounded-full"></div></div>
-            <h3 class="text-2xl font-bold text-center mb-5 flex-shrink-0">おさんぽ履歴</h3>
-            <div id="history-list" class="flex-grow overflow-y-auto space-y-3"></div>
-            <button id="close-history-btn" class="mt-4 w-full bg-rose-400 text-white font-bold py-3 rounded-lg">とじるにゃ</button>
+            <h3 class="text-2xl font-bold text-center mb-5 flex-shrink-0" data-translate-key="walkHistory">おさんぽ履歴</h3>
+            <div id="history-list" class="flex-grow overflow-y-auto space-y-3 custom-scrollbar pr-2"></div>
+            <button id="close-history-btn" class="mt-4 w-full bg-rose-400 text-white font-bold py-3 rounded-lg flex-shrink-0 transition-all shadow-[0_4px_0_0_#D64F61] active:translate-y-0.5 active:shadow-[0_2px_0_0_#D64F61]" data-translate-key="closeNya">とじるにゃ</button>
+        </div>
+    </div>
+
+    <!-- アチーブメントモーダル -->
+    <div id="achievement-modal" class="modal fixed inset-0 z-30 flex-col justify-end hidden">
+        <div class="modal-overlay absolute inset-0 bg-black bg-opacity-70 opacity-0" onclick="closeAchievementModal()"></div>
+        <div class="modal-content w-full max-w-lg mx-auto bg-orange-100 rounded-t-3xl p-5 transform translate-y-full opacity-0 flex flex-col max-h-[85vh]">
+            <div class="text-center mb-4 flex-shrink-0"><div class="inline-block w-10 h-1.5 bg-orange-200 rounded-full"></div></div>
+            <h3 class="text-2xl font-bold text-center mb-5 flex-shrink-0" data-translate-key="achievementsTitle">アチーブメント</h3>
+            <div id="achievement-list" class="flex-grow overflow-y-auto space-y-3 custom-scrollbar pr-2"></div>
+            <button id="close-achievement-btn" class="mt-4 w-full bg-rose-400 text-white font-bold py-3 rounded-lg flex-shrink-0 transition-all shadow-[0_4px_0_0_#D64F61] active:translate-y-0.5 active:shadow-[0_2px_0_0_#D64F61]" data-translate-key="closeNya">とじるにゃ</button>
+        </div>
+    </div>
+
+     <!-- 今日の出会いモーダル -->
+    <div id="encounter-modal" class="modal fixed inset-0 z-40 items-center justify-center p-4 hidden">
+        <div class="modal-overlay absolute inset-0 bg-black bg-opacity-70 opacity-0"></div>
+        <div class="modal-content w-full max-w-sm mx-auto bg-white rounded-2xl p-6 transform scale-95 opacity-0 text-center">
+            <h3 class="text-lg font-bold text-orange-900 mb-2" data-translate-key="encounterTitle">今日の出会い</h3>
+            <p class="text-orange-800 mb-4" data-translate-key="encounterMessage">おさんぽ中に素敵な猫と出会ったにゃ！</p>
+            <div id="encounter-cat-art" class="bg-amber-100 rounded-lg p-4 my-4"></div>
+            <p id="encounter-cat-name" class="font-bold text-xl mb-4"></p>
+            <button id="encounter-ok" class="w-full bg-rose-400 text-white font-bold py-3 rounded-lg transition-all shadow-[0_4px_0_0_#D64F61] active:translate-y-0.5 active:shadow-[0_2px_0_0_#D64F61]" data-translate-key="cute">かわいい！</button>
+        </div>
+    </div>
+
+    <!-- 確認モーダル -->
+    <div id="confirm-modal" class="modal fixed inset-0 z-50 items-center justify-center p-4 hidden">
+        <div class="modal-overlay absolute inset-0 bg-black bg-opacity-70 opacity-0"></div>
+        <div class="modal-content w-full max-w-sm mx-auto bg-white rounded-2xl p-6 transform scale-95 opacity-0 text-center">
+            <h3 id="confirm-title" class="text-lg font-bold text-orange-900 mb-2">タイトル</h3>
+            <p id="confirm-message" class="text-orange-800 mb-6">メッセージ</p>
+            <div class="flex justify-around gap-3">
+                <button id="confirm-cancel" class="w-full bg-gray-300 text-gray-800 font-bold py-3 rounded-lg transition-all shadow-[0_4px_0_0_#A0AEC0] active:translate-y-0.5 active:shadow-[0_2px_0_0_#A0AEC0]" data-translate-key="cancel">キャンセル</button>
+                <button id="confirm-ok" class="w-full bg-rose-400 text-white font-bold py-3 rounded-lg transition-all shadow-[0_4px_0_0_#D64F61] active:translate-y-0.5 active:shadow-[0_2px_0_0_#D64F61]" data-translate-key="ok">OK</button>
+            </div>
         </div>
     </div>
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
+        // --- DOM要素の取得 ---
         const getEl = (id) => document.getElementById(id);
-
-        const distanceEl = getEl('distance'), paceEl = getEl('pace'), timerEl = getEl('timer'), stepsEl = getEl('steps');
+        const distanceEl = getEl('distance'), paceEl = getEl('pace'), timerEl = getEl('timer'), stepsTodayEl = getEl('steps-today'), pointsEl = getEl('points');
         const startBtn = getEl('start-btn'), stopBtn = getEl('stop-btn'), historyBtn = getEl('history-btn');
+        const languageToggle = getEl('language-toggle');
         const historyModal = getEl('history-modal'), closeHistoryBtn = getEl('close-history-btn'), historyList = getEl('history-list');
-        const startPauseIcon = getEl('start-pause-icon');
+        const achievementBtn = getEl('achievement-btn'), achievementModal = getEl('achievement-modal'), closeAchievementBtn = getEl('close-achievement-btn'), achievementList = getEl('achievement-list');
+        const userTitleEl = getEl('user-title');
+        const donateBtn = getEl('donate-btn'), totalDonatedPointsEl = getEl('total-donated-points');
+
         const pawIconSVG = `<svg id="start-pause-icon" xmlns="http://www.w3.org/2000/svg" width="72" height="72" viewBox="0 0 24 24" fill="#ffffff" stroke="#f4a285" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><path d="M12.9 19.3c1-.8 1.4-2 1-3.3s-1.4-2.2-2.5-2.5c-2.3-.5-4.6-2.9-4.8-5.3-.2-2.8 2.2-5.2 5-5.2 2.1 0 3.9 1.3 4.6 3.2"/><path d="M18 8.8c.3.8.4 1.6.4 2.4 0 2.8-2.2 5-5 5-1.6 0-3-1-3.8-2.2"/><path d="M20.8 13.9c.2-1.6-.3-3.2-1.5-4.4-1.3-1.4-3-2.1-4.8-2.1-3.6 0-6.5 2.9-6.5 6.5 0 2.4 1.3 4.5 3.2 5.6"/><path d="M2.5 17.5c2.4.9 5.2.4 7.2-1.3"/></svg>`;
         const pauseIconSVG = `<svg id="start-pause-icon" xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="4" x2="6" y2="20"></line><line x1="18" y1="4" x2="18" y2="20"></line></svg>`;
 
+        // --- 状態管理変数 ---
         let map, polyline, userMarker;
         let isRunning = false, isPaused = false;
         let watchId = null, startTime = 0, pausedTime = 0, totalPausedTime = 0, timerInterval = null;
-        let totalDistance = 0, routeCoordinates = [], runHistory = [];
+        let totalDistance = 0, currentPoints = 0, routeCoordinates = [], runHistory = [];
+        let totalDonatedPoints = 0;
+        let currentLanguage = 'ja';
         const AVERAGE_STRIDE_METERS = 0.762;
-        
-        const catIcon = L.divIcon({
-            html: `<div style="font-size: 32px; transform: translate(-16px, -16px);">🐾</div>`,
-            className: '', iconSize: [32, 32], iconAnchor: [16, 16]
-        });
+        const GOAL_STEPS = 5000;
 
-        const init = () => {
-            initMap(); loadHistory(); attachEventListeners();
+        // --- 多言語対応 ---
+        const translations = {
+            ja: {
+                appTitle: "にゃんぽ de みまもり",
+                goalTitle: "今日の目標",
+                estimatedSteps: "推定にゃん歩",
+                goalMessageDefault: "まずはお散歩を始めようにゃ！",
+                goalMessageInProgress: "その調子だにゃ！",
+                goalMessageAlmost: "いい調子！ゴールは目前にゃ！",
+                goalMessageComplete: "目標達成だにゃ！すごい！",
+                titleAndAchievements: "称号 & アチーブメント",
+                viewList: "一覧",
+                catSupport: "保護猫支援",
+                totalDonatedPoints: "総寄付ポイント",
+                donatePoints: "ポイントを寄付",
+                dailyMissions: "デイリーミッション",
+                mission1Text: "1000歩あるくにゃ！",
+                mission2Text: "みまもりスポットに1回チェックイン！",
+                missionComplete: "(達成)",
+                locationNeeded: "位置情報が必要だにゃ",
+                locationMessage: "このアプリを使うには、位置情報を許可してほしいにゃ。",
+                distance: "距離 (km)",
+                pace: "ペース (分/km)",
+                time: "時間",
+                currentPoints: "今回のポイント",
+                walkHistory: "おさんぽ履歴",
+                closeNya: "とじるにゃ",
+                noHistory: "まだ履歴はにゃいみたい。",
+                distanceLabel: "距離",
+                timeLabel: "時間",
+                paceLabel: "ペース",
+                pointsLabel: "ポイント",
+                achievementsTitle: "アチーブメント",
+                encounterTitle: "今日の出会い",
+                encounterMessage: "おさんぽ中に素敵な猫と出会ったにゃ！",
+                cute: "かわいい！",
+                confirmTitle: "確認だにゃ",
+                stopConfirmMessage: "おさんぽを終わりにしますか？",
+                cancel: "キャンセル",
+                ok: "OK",
+                achievementUnlockedTitle: "アチーブメント達成！",
+                achievementUnlockedMessage: "新しいアチーブメントを獲得しました！一覧で確認しよう！",
+                donationConfirmTitle: "ポイント寄付",
+                donationConfirmMessage: (amount) => `${amount}ポイントを保護猫団体に寄付しますか？`,
+                noPointsToDonateTitle: "お知らせ",
+                noPointsToDonateMessage: "寄付できる新しいポイントがありませんにゃ。",
+                catComment1: "プロのおさんぽマスターだにゃ！", catComment2: "すごいにゃ！いっぱい走ったんだにゃ！", catComment3: "いい運動になったにゃ！また行こうにゃ！", catComment4: "楽しいおさんぽだったにゃ！", catComment5: "のんびりおさんぽもいいものだにゃ〜",
+                ach_first_step_name: "はじめの一歩", ach_first_step_desc: "初めておさんぽを記録した",
+                ach_first_km_name: "祝！1km達成", ach_first_km_desc: "1回のおさんぽで1km歩いた",
+                ach_ten_km_total_name: "着実な歩み", ach_ten_km_total_desc: "合計10km歩いた",
+                ach_first_spot_name: "地域のヒーロー", ach_first_spot_desc: "初めてみまもりスポットを訪問した",
+                title_0: "おさんぽ見習い", title_10: "路地裏の新人", title_50: "ベテランウォーカー", title_100: "縄張りの主", title_200: "地域の見守り猫",
+            },
+            en: {
+                appTitle: "Nyanpo de Mimamori",
+                goalTitle: "Today's Goal",
+                estimatedSteps: "Estimated Steps",
+                goalMessageDefault: "Let's start walking!",
+                goalMessageInProgress: "Keep it up!",
+                goalMessageAlmost: "Almost there, great job!",
+                goalMessageComplete: "Goal achieved! Amazing!",
+                titleAndAchievements: "Title & Achievements",
+                viewList: "View",
+                catSupport: "Support Cats",
+                totalDonatedPoints: "Total Donated Points",
+                donatePoints: "Donate Points",
+                dailyMissions: "Daily Missions",
+                mission1Text: "Walk 1000 steps!",
+                mission2Text: "Check in at 1 Mimamori Spot!",
+                missionComplete: "(Complete)",
+                locationNeeded: "Location Access Required",
+                locationMessage: "Please enable location services to use this app.",
+                distance: "Distance (km)",
+                pace: "Pace (min/km)",
+                time: "Time",
+                currentPoints: "Current Points",
+                walkHistory: "Walk History",
+                closeNya: "Close",
+                noHistory: "No history yet.",
+                distanceLabel: "Distance",
+                timeLabel: "Time",
+                paceLabel: "Pace",
+                pointsLabel: "Points",
+                achievementsTitle: "Achievements",
+                encounterTitle: "Today's Encounter",
+                encounterMessage: "You met a lovely cat during your walk!",
+                cute: "So cute!",
+                confirmTitle: "Confirmation",
+                stopConfirmMessage: "Are you sure you want to end your walk?",
+                cancel: "Cancel",
+                ok: "OK",
+                achievementUnlockedTitle: "Achievement Unlocked!",
+                achievementUnlockedMessage: "You've earned a new achievement! Check it out in the list.",
+                donationConfirmTitle: "Donate Points",
+                donationConfirmMessage: (amount) => `Do you want to donate ${amount} points to the cat shelter?`,
+                noPointsToDonateTitle: "Notice",
+                noPointsToDonateMessage: "There are no new points to donate.",
+                catComment1: "You're a pro walker!", catComment2: "Wow! That was a long walk!", catComment3: "Great exercise! Let's go again!", catComment4: "That was a fun walk!", catComment5: "A slow stroll is nice too~",
+                ach_first_step_name: "First Step", ach_first_step_desc: "Recorded your first walk",
+                ach_first_km_name: "1km Reached!", ach_first_km_desc: "Walked 1km in a single session",
+                ach_ten_km_total_name: "Steady Walker", ach_ten_km_total_desc: "Walked a total of 10km",
+                ach_first_spot_name: "Local Hero", ach_first_spot_desc: "Visited a Mimamori Spot for the first time",
+                title_0: "Walking Apprentice", title_10: "Alley Cat Rookie", title_50: "Veteran Walker", title_100: "Territory Boss", title_200: "Community Guardian Cat",
+            }
         };
 
+        const setLanguage = (lang) => {
+            currentLanguage = lang;
+            document.documentElement.lang = lang;
+            languageToggle.checked = (lang === 'ja');
+
+            document.querySelectorAll('[data-translate-key]').forEach(el => {
+                const key = el.dataset.translateKey;
+                if (translations[lang] && translations[lang][key]) {
+                    el.textContent = translations[lang][key];
+                }
+            });
+            // 動的な部分も更新
+            updateDashboard(Math.round(totalDistance / AVERAGE_STRIDE_METERS));
+            updateMissions(Math.round(totalDistance / AVERAGE_STRIDE_METERS));
+            updateTitle();
+        };
+
+        // --- 社会貢献機能: みまもりスポット (ダミーデータ) ---
+        const spots = [
+            { id: 1, name: 'にゃんにゃん公園', type: 'park', lat: 35.683, lng: 139.768, checked: false, points: 20 },
+            { id: 2, name: 'わんわん避難所', type: 'shelter', lat: 35.679, lng: 139.765, checked: false, points: 50 },
+            { id: 3, name: 'こども食堂「はらぺこ」', type: 'support', lat: 35.685, lng: 139.764, checked: false, points: 30 }
+        ];
+        let spotMarkers = [];
+        
+        // --- モチベーション要素データ ---
+        const titles = [
+            { dist: 0, key: "title_0" }, { dist: 10, key: "title_10" },
+            { dist: 50, key: "title_50" }, { dist: 100, key: "title_100" },
+            { dist: 200, key: "title_200" }
+        ];
+
+        let achievements = {
+            'first_step': { key_name: "ach_first_step_name", key_desc: "ach_first_step_desc", unlocked: false, icon: "🐾" },
+            'first_km': { key_name: "ach_first_km_name", key_desc: "ach_first_km_desc", unlocked: false, icon: "👟" },
+            'ten_km_total': { key_name: "ach_ten_km_total_name", key_desc: "ach_ten_km_total_desc", unlocked: false, icon: "🗺️" },
+            'first_spot': { key_name: "ach_first_spot_name", key_desc: "ach_first_spot_desc", unlocked: false, icon: "🦸" }
+        };
+        
+        const cats = [
+            { name: "ミケ", art: `<pre class="text-sm leading-tight"> /\\_/\\ \n( o.o )\n > ^ < </pre>` },
+            { name: "クロ", art: `<pre class="text-sm leading-tight"> /\\_/\\ \n( -.- )\n > ^ < </pre>` },
+            { name: "タマ", art: `<pre class="text-sm leading-tight"> /\\_/\\ \n( >.< )\n > ^ < </pre>` }
+        ];
+
+        // --- Leaflet.js アイコン定義 ---
+        const catIcon = L.divIcon({ html: `<div style="font-size: 36px; transform: translate(-18px, -36px);">🐈</div>`, className: '', iconSize: [36, 36], iconAnchor: [18, 36] });
+        const spotIcons = {
+            park: L.divIcon({ html: `<div class="bg-green-500 rounded-full w-8 h-8 flex items-center justify-center text-white border-2 border-white shadow-lg">🌳</div>`, className: '', iconSize: [32, 32], iconAnchor: [16, 16] }),
+            shelter: L.divIcon({ html: `<div class="bg-blue-500 rounded-full w-8 h-8 flex items-center justify-center text-white border-2 border-white shadow-lg">避</div>`, className: '', iconSize: [32, 32], iconAnchor: [16, 16] }),
+            support: L.divIcon({ html: `<div class="bg-yellow-500 rounded-full w-8 h-8 flex items-center justify-center text-white border-2 border-white shadow-lg">💛</div>`, className: '', iconSize: [32, 32], iconAnchor: [16, 16] })
+        };
+        
+        // --- 初期化処理 ---
+        const init = () => {
+            initMap();
+            loadData();
+            const savedLang = localStorage.getItem('nyanpoLang') || 'ja';
+            setLanguage(savedLang);
+            attachEventListeners();
+            updateDashboard();
+            updateTitle();
+            updateDonationUI();
+        };
+
+        // --- 地図の初期化 ---
         const initMap = () => {
             map = L.map('map').setView([35.681236, 139.767125], 16);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap contributors' }).addTo(map);
+            renderSpots();
             navigator.geolocation.getCurrentPosition(
                 (pos) => map.setView([pos.coords.latitude, pos.coords.longitude], 16),
                 handleLocationError
             );
         };
         
-        const loadHistory = () => runHistory = JSON.parse(localStorage.getItem('nyanpoHistory')) || [];
-        const saveHistory = () => localStorage.setItem('nyanpoHistory', JSON.stringify(runHistory));
+        // --- みまもりスポットを地図に表示 ---
+        const renderSpots = () => {
+            spots.forEach(spot => {
+                const marker = L.marker([spot.lat, spot.lng], { icon: spotIcons[spot.type] })
+                    .addTo(map)
+                    .bindPopup(`<b>${spot.name}</b><br>${spot.points}ポイントGET!`);
+                spotMarkers.push({ marker, spot });
+            });
+        };
+
+        // --- データ管理 (localStorage) ---
+        const loadData = () => {
+            runHistory = JSON.parse(localStorage.getItem('nyanpoHistory')) || [];
+            const savedAchievements = JSON.parse(localStorage.getItem('nyanpoAchievements'));
+            if(savedAchievements) achievements = savedAchievements;
+            totalDonatedPoints = parseInt(localStorage.getItem('nyanpoDonatedPoints')) || 0;
+        };
+        const saveData = () => {
+            localStorage.setItem('nyanpoHistory', JSON.stringify(runHistory));
+            localStorage.setItem('nyanpoAchievements', JSON.stringify(achievements));
+            localStorage.setItem('nyanpoDonatedPoints', totalDonatedPoints);
+        };
         
+        // --- UI更新関数 ---
         const updateTimer = () => {
             if (!isRunning || isPaused) return;
             const elapsed = Date.now() - startTime - totalPausedTime;
@@ -129,47 +444,114 @@
         
         const updateStats = () => {
             const distKm = totalDistance / 1000;
+            const steps = Math.round(totalDistance / AVERAGE_STRIDE_METERS);
             distanceEl.textContent = distKm.toFixed(2);
-            stepsEl.textContent = Math.round(totalDistance / AVERAGE_STRIDE_METERS);
+            stepsTodayEl.textContent = steps.toLocaleString();
+            pointsEl.textContent = currentPoints;
+            updateDashboard(steps);
+
             const elapsedSecs = (Date.now() - startTime - totalPausedTime) / 1000;
             if (distKm > 0 && elapsedSecs > 0) {
                 const paceSecsPerKm = elapsedSecs / distKm;
                 const paceM = Math.floor(paceSecsPerKm / 60);
                 const paceS = Math.floor(paceSecsPerKm % 60);
                 paceEl.textContent = `${String(paceM).padStart(2, '0')}:${String(paceS).padStart(2, '0')}`;
-            } else paceEl.textContent = '--:--';
+            } else {
+                paceEl.textContent = '--:--';
+            }
+        };
+
+        const updateDashboard = (currentSteps = 0) => {
+            const percentage = Math.min(100, (currentSteps / GOAL_STEPS) * 100);
+            const circle = getEl('goal-progress-circle');
+            const radius = circle.r.baseVal.value;
+            const circumference = radius * 2 * Math.PI;
+            const offset = circumference - (percentage / 100) * circumference;
+            circle.style.strokeDashoffset = offset;
+            getEl('goal-percentage').textContent = `${Math.round(percentage)}%`;
+            const lang = currentLanguage;
+            const messages = translations[lang];
+
+            if (percentage >= 100) getEl('goal-message').textContent = messages.goalMessageComplete;
+            else if (percentage > 50) getEl('goal-message').textContent = messages.goalMessageAlmost;
+            else if (percentage > 0) getEl('goal-message').textContent = messages.goalMessageInProgress;
+            else getEl('goal-message').textContent = messages.goalMessageDefault;
+
+            updateMissions(currentSteps);
         };
         
+        const updateMissions = (steps) => {
+            const lang = currentLanguage;
+            const trans = translations[lang];
+            const mission1El = getEl('mission1');
+            const mission1Check = mission1El.querySelector('div');
+            const mission1TextEl = mission1El.querySelector('p');
+
+            if (steps >= 1000) {
+                mission1Check.classList.add('bg-amber-400', 'border-amber-400');
+                mission1TextEl.innerHTML = `<span data-translate-key="mission1Text" class="line-through text-gray-500">${trans.mission1Text}</span> <span class="line-through text-gray-500">${trans.missionComplete}</span>`;
+            } else {
+                mission1TextEl.innerHTML = `<span data-translate-key="mission1Text">${trans.mission1Text}</span> (${steps}/1000)`;
+            }
+
+            const checkedInSpots = spots.filter(s => s.checked).length;
+            const mission2El = getEl('mission2');
+            const mission2Check = mission2El.querySelector('div');
+            const mission2TextEl = mission2El.querySelector('p');
+            if (checkedInSpots >= 1) {
+                mission2Check.classList.add('bg-amber-400', 'border-amber-400');
+                mission2TextEl.innerHTML = `<span data-translate-key="mission2Text" class="line-through text-gray-500">${trans.mission2Text}</span> <span class="line-through text-gray-500">${trans.missionComplete}</span>`;
+            } else {
+                 mission2TextEl.innerHTML = `<span data-translate-key="mission2Text">${trans.mission2Text}</span>`;
+            }
+        };
+
+        const updateTitle = () => {
+            const totalKm = runHistory.reduce((sum, run) => sum + run.distance, 0);
+            const currentTitleData = titles.slice().reverse().find(t => totalKm >= t.dist);
+            if(currentTitleData) {
+                userTitleEl.textContent = translations[currentLanguage][currentTitleData.key];
+            }
+        };
+        
+        const updateDonationUI = () => {
+            totalDonatedPointsEl.textContent = `${totalDonatedPoints.toLocaleString()} pt`;
+        };
+
         const getCatComment = (km) => {
-            if (km > 10) return "プロのおさんぽマスターだにゃ！";
-            if (km > 5) return "すごいにゃ！いっぱい走ったんだにゃ！";
-            if (km > 2) return "いい運動になったにゃ！また行こうにゃ！";
-            if (km > 0.5) return "楽しいおさんぽだったにゃ！";
-            return "のんびりおさんぽもいいものだにゃ〜";
+            const trans = translations[currentLanguage];
+            if (km > 10) return trans.catComment1;
+            if (km > 5) return trans.catComment2;
+            if (km > 2) return trans.catComment3;
+            if (km > 0.5) return trans.catComment4;
+            return trans.catComment5;
         };
 
         const renderHistory = () => {
+            const trans = translations[currentLanguage];
             historyList.innerHTML = '';
             if (runHistory.length === 0) {
-                historyList.innerHTML = `<div class="text-center text-orange-700/60 p-8"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><path d="M12.38 2.62a1 1 0 0 0-1.09.21l-4.1 4.1a1 1 0 0 0 .71 1.71h8.2a1 1 0 0 0 .71-1.71l-4.1-4.1a1 1 0 0 0-1.11-.21z"/><path d="M5.5 8.5v5.8a1 1 0 0 0 .5 1.71h12a1 1 0 0 0 .5-1.71V8.5"/><path d="M18.5 14.3v4.6a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-4.6"/></svg><p class="mt-4">まだ履歴はにゃいみたい。</p></div>`;
+                historyList.innerHTML = `<div class="text-center text-orange-700/60 p-8"><svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mx-auto"><path d="M12.38 2.62a1 1 0 0 0-1.09.21l-4.1 4.1a1 1 0 0 0 .71 1.71h8.2a1 1 0 0 0 .71-1.71l-4.1-4.1a1 1 0 0 0-1.11-.21z"/><path d="M5.5 8.5v5.8a1 1 0 0 0 .5 1.71h12a1 1 0 0 0 .5-1.71V8.5"/><path d="M18.5 14.3v4.6a1 1 0 0 1-1 1h-11a1 1 0 0 1-1-1v-4.6"/></svg><p class="mt-4">${trans.noHistory}</p></div>`;
                 return;
             }
             [...runHistory].reverse().forEach(run => {
                 const item = document.createElement('div');
-                item.className = 'bg-white/80 p-4 rounded-xl';
+                item.className = 'bg-white/80 p-4 rounded-xl shadow';
                 item.innerHTML = `
-                    <p class="font-bold text-sm text-orange-800">${new Date(run.date).toLocaleString('ja-JP')}</p>
-                    <p class="text-base font-bold text-orange-900 mt-2">"${run.comment}"</p>
-                    <div class="grid grid-cols-3 gap-2 mt-3 text-center">
-                        <div><p class="text-xs text-orange-500">距離</p><p class="font-bold">${run.distance.toFixed(2)} km</p></div>
-                        <div><p class="text-xs text-orange-500">時間</p><p class="font-bold">${run.time}</p></div>
-                        <div><p class="text-xs text-orange-500">ペース</p><p class="font-bold">${run.pace}</p></div>
+                    <p class="font-bold text-sm text-orange-800">${new Date(run.date).toLocaleString(currentLanguage === 'ja' ? 'ja-JP' : 'en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p>
+                    <p class="text-base font-bold text-orange-900 mt-2 leading-relaxed">"${run.comment}"</p>
+                    <div class="grid grid-cols-4 gap-2 mt-3 text-center">
+                        <div><p class="text-xs text-orange-500">${trans.distanceLabel}</p><p class="font-bold">${run.distance.toFixed(2)} km</p></div>
+                        <div><p class="text-xs text-orange-500">${trans.timeLabel}</p><p class="font-bold">${run.time}</p></div>
+                        <div><p class="text-xs text-orange-500">${trans.paceLabel}</p><p class="font-bold">${run.pace}</p></div>
+                        <div><p class="text-xs text-orange-500">${trans.pointsLabel}</p><p class="font-bold">${run.points} pt</p></div>
                     </div>
                 `;
                 historyList.appendChild(item);
             });
         };
         
+        // --- 計測の開始/一時停止/終了 ---
         const toggleRunState = () => {
             if (!isRunning) startRun();
             else pauseRun();
@@ -180,13 +562,10 @@
             isRunning = true; isPaused = false;
             startTime = Date.now(); totalPausedTime = 0;
             timerInterval = setInterval(updateTimer, 1000);
-            
             startBtn.innerHTML = pauseIconSVG;
             stopBtn.classList.remove('hidden'); stopBtn.style.display = 'flex';
-            
             polyline = L.polyline([], { color: '#F97316', weight: 6, opacity: 0.8 }).addTo(map);
-
-            watchId = navigator.geolocation.watchPosition(updatePosition, handleLocationError, { enableHighAccuracy: true });
+            watchId = navigator.geolocation.watchPosition(updatePosition, handleLocationError, { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 });
         };
         
         const pauseRun = () => {
@@ -206,11 +585,29 @@
                 runHistory.push({
                     date: new Date().toISOString(), distance: finalDistKm,
                     time: timerEl.textContent, pace: paceEl.textContent,
-                    comment: getCatComment(finalDistKm)
+                    points: currentPoints, comment: getCatComment(finalDistKm)
                 });
-                saveHistory();
+                checkAchievements(finalDistKm);
+                saveData();
+                updateTitle();
+                if(finalDistKm >= 1) { // 1km以上歩いたら猫に会える
+                    setTimeout(showEncounterModal, 500);
+                }
             }
             resetState(true);
+        };
+        
+        const checkAchievements = (distKm) => {
+            let newAchievement = false;
+            if(!achievements.first_step.unlocked) { achievements.first_step.unlocked = true; newAchievement = true; }
+            if(!achievements.first_km.unlocked && distKm >= 1) { achievements.first_km.unlocked = true; newAchievement = true; }
+            const totalKm = runHistory.reduce((sum, run) => sum + run.distance, 0);
+            if(!achievements.ten_km_total.unlocked && totalKm >= 10) { achievements.ten_km_total.unlocked = true; newAchievement = true; }
+            if(!achievements.first_spot.unlocked && spots.some(s=>s.checked)) { achievements.first_spot.unlocked = true; newAchievement = true; }
+
+            if(newAchievement) {
+                showConfirmModal(translations[currentLanguage].achievementUnlockedTitle, translations[currentLanguage].achievementUnlockedMessage, () => {});
+            }
         };
 
         const resetState = (isStopping = false) => {
@@ -218,58 +615,165 @@
                 isRunning = false; isPaused = false;
                 clearInterval(timerInterval);
                 if (watchId) navigator.geolocation.clearWatch(watchId); watchId = null;
-                
                 startBtn.innerHTML = pawIconSVG;
                 stopBtn.classList.add('hidden');
                 
-                totalDistance = 0; routeCoordinates = [];
+                totalDistance = 0; currentPoints = 0; routeCoordinates = [];
                 distanceEl.textContent = '0.00'; paceEl.textContent = '--:--';
-                timerEl.textContent = '00:00:00'; stepsEl.textContent = '0';
-                if(polyline) map.removeLayer(polyline);
-                if(userMarker) map.removeLayer(userMarker);
+                timerEl.textContent = '00:00:00'; stepsTodayEl.textContent = '0';
+                pointsEl.textContent = '0';
+                
+                if (polyline) map.removeLayer(polyline);
+                if (userMarker) map.removeLayer(userMarker);
                 polyline = null; userMarker = null;
+                updateDashboard(0);
+                spots.forEach(s => s.checked = false);
+                updateMissions(0);
             }
         };
 
         const updatePosition = (position) => {
-            if (isPaused) return;
+            if (isPaused || !isRunning) return;
             const { latitude, longitude } = position.coords;
             const newCoord = [latitude, longitude];
-            map.setView(newCoord, 17);
+            map.setView(newCoord, 17, { animate: true, pan: { duration: 1 }});
             
             if (userMarker) userMarker.setLatLng(newCoord);
             else userMarker = L.marker(newCoord, { icon: catIcon }).addTo(map);
             
             if (routeCoordinates.length > 0) {
-                totalDistance += L.latLng(routeCoordinates[routeCoordinates.length - 1]).distanceTo(L.latLng(newCoord));
+                const lastCoord = routeCoordinates[routeCoordinates.length - 1];
+                const distanceIncrement = L.latLng(lastCoord).distanceTo(L.latLng(newCoord));
+                totalDistance += distanceIncrement;
+                currentPoints += Math.floor(distanceIncrement / 10); // 10mごとに1ポイント
             }
             routeCoordinates.push(newCoord);
             polyline.setLatLngs(routeCoordinates);
             updateStats();
+            checkSpotProximity(latitude, longitude);
         };
 
-        const handleLocationError = (error) => getEl('permission-overlay').style.display = 'flex';
+        const checkSpotProximity = (lat, lng) => {
+            const userLatLng = L.latLng(lat, lng);
+            spots.forEach(spot => {
+                if (!spot.checked) {
+                    const spotLatLng = L.latLng(spot.lat, spot.lng);
+                    if (userLatLng.distanceTo(spotLatLng) < 25) {
+                        spot.checked = true;
+                        currentPoints += spot.points;
+                        spotMarkers.find(sm => sm.spot.id === spot.id).marker.getPopup().setContent(`<b>${spot.name}</b><br>チェックイン！ ${spot.points}pt GET!`).openOn(map);
+                        updateStats();
+                    }
+                }
+            });
+        };
 
+        const handleLocationError = (error) => { getEl('permission-overlay').style.display = 'flex'; };
+
+        // --- モーダル制御 ---
+        const openModal = (modal) => {
+            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
+            requestAnimationFrame(() => modal.classList.add('open'));
+        };
+        const closeModal = (modal) => {
+            modal.classList.remove('open');
+            setTimeout(() => modal.classList.add('hidden'), 300);
+        };
+
+        const renderAchievements = () => {
+            const trans = translations[currentLanguage];
+            achievementList.innerHTML = '';
+            for(const key in achievements){
+                const ach = achievements[key];
+                const item = document.createElement('div');
+                item.className = `achievement-badge flex items-center bg-white/80 p-3 rounded-xl shadow ${ach.unlocked ? '' : 'locked'}`;
+                item.innerHTML = `
+                    <div class="text-3xl mr-4">${ach.icon}</div>
+                    <div>
+                        <p class="font-bold text-orange-900">${trans[ach.key_name]}</p>
+                        <p class="text-sm text-orange-700">${trans[ach.key_desc]}</p>
+                    </div>
+                `;
+                achievementList.appendChild(item);
+            }
+        };
+
+        const showEncounterModal = () => {
+            const cat = cats[Math.floor(Math.random() * cats.length)];
+            getEl('encounter-cat-art').innerHTML = cat.art;
+            getEl('encounter-cat-name').textContent = cat.name;
+            openModal(getEl('encounter-modal'));
+        };
+        
+        const showConfirmModal = (title, message, onOk) => {
+            const modal = getEl('confirm-modal');
+            getEl('confirm-title').textContent = title;
+            getEl('confirm-message').textContent = message;
+            openModal(modal);
+
+            const okBtn = getEl('confirm-ok');
+            const cancelBtn = getEl('confirm-cancel');
+            
+            const close = () => closeModal(modal);
+            
+            okBtn.onclick = () => { close(); onOk(); };
+            cancelBtn.onclick = close;
+        };
+        
+        // --- イベントリスナー ---
         const attachEventListeners = () => {
             startBtn.addEventListener('click', toggleRunState);
-            stopBtn.addEventListener('click', () => { if(confirm('おさんぽを終わりにしますか？')) stopRun(); });
-
+            stopBtn.addEventListener('click', () => {
+                showConfirmModal(translations[currentLanguage].confirmTitle, translations[currentLanguage].stopConfirmMessage, stopRun);
+            });
             historyBtn.addEventListener('click', () => {
                 renderHistory();
-                historyModal.classList.remove('hidden');
-                requestAnimationFrame(() => historyModal.classList.add('open'));
+                openModal(historyModal)
             });
-            closeHistoryBtn.addEventListener('click', () => {
-                historyModal.classList.remove('open');
-                setTimeout(() => historyModal.classList.add('hidden'), 300);
+            closeHistoryBtn.addEventListener('click', () => closeModal(historyModal));
+            achievementBtn.addEventListener('click', () => {
+                renderAchievements();
+                openModal(achievementModal);
+            });
+            closeAchievementBtn.addEventListener('click', () => closeModal(achievementModal));
+            getEl('encounter-ok').addEventListener('click', () => closeModal(getEl('encounter-modal')));
+            
+            donateBtn.addEventListener('click', () => {
+                const trans = translations[currentLanguage];
+                const pointsToDonate = runHistory.reduce((sum, run) => sum + run.points, 0) + currentPoints;
+                if(pointsToDonate - totalDonatedPoints > 0){
+                    const donationAmount = pointsToDonate - totalDonatedPoints;
+                     showConfirmModal(trans.donationConfirmTitle, trans.donationConfirmMessage(donationAmount), () => {
+                        totalDonatedPoints = pointsToDonate;
+                        updateDonationUI();
+                        saveData();
+                     });
+                } else {
+                     showConfirmModal(trans.noPointsToDonateTitle, trans.noPointsToDonateMessage, () => {});
+                }
+            });
+
+            languageToggle.addEventListener('change', (e) => {
+                const newLang = e.target.checked ? 'ja' : 'en';
+                setLanguage(newLang);
+                localStorage.setItem('nyanpoLang', newLang);
             });
         };
         
         init();
     });
+
+    function closeHistoryModal() {
+        document.getElementById('history-modal').classList.remove('open');
+        setTimeout(() => document.getElementById('history-modal').classList.add('hidden'), 300);
+    }
+    function closeAchievementModal() {
+        document.getElementById('achievement-modal').classList.remove('open');
+        setTimeout(() => document.getElementById('achievement-modal').classList.add('hidden'), 300);
+    }
     </script>
 </body>
 </html>
-
 
 
