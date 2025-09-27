@@ -1,56 +1,55 @@
 <div align="center">
 
-# 🐾 にゃん歩計 🐾  
-**ねことお散歩ランニングカウンター**
-
+# 🐾 Nyan Pedometer 🐾  
+**Cat-themed Walking & Running Counter**
 
 </div>
 
 <p align="center">
-  <i>「いつものお散歩が、ねことの楽しい冒険に変わる！」</i>
+  <i>"Turn your daily walk into a fun adventure with your cat!"</i>
 </p>
 
 ---
 
-## ✨ 主な機能 (Features)
+## ✨ Features
 
-- 🐾 **心ときめくデザイン**  
-  クリーム色とオレンジを基調にした、温かみのあるUI。  
+- 🐾 **Charming Design**  
+  Warm UI based on cream and orange tones.  
 
-- 🏃 **リアルタイムトラッキング**  
-  GPSで距離・ペース・時間、オリジナルの「にゃん歩（推定歩数）」を計測。  
+- 🏃 **Real-Time Tracking**  
+  Track distance, pace, and time with GPS, plus unique "Nyan Steps" (estimated steps).  
 
-- 🗺️ **ねこと一緒に軌跡を記録**  
-  現在地はねこアイコンで表示。移動ルートが足跡として地図に描かれます。  
+- 🗺️ **Walk Together with Your Cat**  
+  Your current location is displayed as a cat icon, and your walking route is drawn as pawprints on the map.  
 
-- 😻 **かわいい肉球ボタン**  
-  押すとアニメーション付きのぷにぷに肉球ボタン。  
+- 😻 **Cute Paw Button**  
+  Interactive paw button with squishy animation when pressed.  
 
-- 📔 **思い出のおさんぽ履歴**  
-  過去の記録を自動保存。ねこがコメントで褒めてくれます。  
+- 📔 **Walk History**  
+  Automatically saves past walks. Your cat leaves fun comments to cheer you on.  
 
-- 📁 **シンプル構成**  
-  `index.html` ひとつで完結。セットアップ不要。  
-
----
-
-## 🚀 使い方 (Getting Started)
-
-1. **ダウンロード**  
-   このリポジトリから `index.html` を取得。  
-
-2. **ブラウザで開く**  
-   スマートフォンのブラウザで `index.html` を開きます。  
-
-3. **位置情報を許可**  
-   初回起動時に位置情報アクセスを「許可」。  
-
-4. **スタート！**  
-   中央の肉球ボタンを押してお散歩開始。  
+- 📁 **Simple Setup**  
+  Everything runs in a single `index.html`. No installation required.  
 
 ---
 
-## 🛠️ 使用技術 (Technologies Used)
+## 🚀 Getting Started
+
+1. **Download**  
+   Get `index.html` from this repository.  
+
+2. **Open in Browser**  
+   Open `index.html` on your smartphone browser.  
+
+3. **Allow Location Access**  
+   On first launch, allow location access when prompted.  
+
+4. **Start Walking!**  
+   Press the central paw button to begin your walk.  
+
+---
+
+## 🛠️ Technologies Used
 
 <p align="center">
   <img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white">
@@ -59,7 +58,3 @@
   <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black">
   <img src="https://img.shields.io/badge/Leaflet.js-199900?style=for-the-badge&logo=leaflet&logoColor=white">
 </p>
-
----
-
-#
